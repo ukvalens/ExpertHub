@@ -20,7 +20,7 @@ if ($user_type === 'customer') {
     
     // Get customer stats
     $stmt = $conn->prepare("SELECT 
-        COUNT(CASE WHEN status IN ('requested', 'quoted', 'accepted', 'in_progress') THEN 1 END) as active_orders,
+        COUNT(CASE WHEN status IN ('accepted', 'in_progress') THEN 1 END) as active_orders,
         COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_orders,
         COALESCE(SUM(CASE WHEN status = 'completed' THEN final_price END), 0) as total_spent
         FROM orders WHERE customer_id = ?");
@@ -36,7 +36,7 @@ if ($user_type === 'customer') {
     
     // Get provider stats
     $stmt = $conn->prepare("SELECT 
-        (SELECT COUNT(*) FROM orders WHERE provider_id = sp.id AND status IN ('requested', 'quoted', 'accepted', 'in_progress')) as active_orders,
+        (SELECT COUNT(*) FROM orders WHERE provider_id = sp.id AND status IN ('accepted', 'in_progress')) as active_orders,
         (SELECT COUNT(*) FROM orders WHERE provider_id = sp.id AND status = 'completed') as completed_orders,
         (SELECT COUNT(*) FROM provider_services WHERE provider_id = sp.id AND status = 'active') as total_services
         FROM service_providers sp WHERE sp.user_id = ?");
@@ -54,7 +54,7 @@ if ($user_type === 'customer') {
     $stmt = $conn->prepare("SELECT 
         (SELECT COUNT(*) FROM users WHERE status = 'active') as total_users,
         (SELECT COUNT(*) FROM provider_services WHERE status = 'active') as total_services,
-        (SELECT COUNT(*) FROM orders WHERE status IN ('requested', 'quoted', 'accepted', 'in_progress')) as active_orders,
+        (SELECT COUNT(*) FROM orders WHERE status IN ('accepted', 'in_progress')) as active_orders,
         (SELECT COALESCE(SUM(final_price), 0) FROM orders WHERE status = 'completed') as total_revenue");
     $stmt->execute();
     $stats = $stmt->get_result()->fetch_assoc();
@@ -215,16 +215,16 @@ if ($user_type === 'customer') {
                     <a class="nav-link" href="../customer/orders.php?lang=<?php echo $lang; ?>">
                         <i class="fas fa-list-alt me-1"></i>My Orders
                     </a>
-                    <a class="nav-link" href="#" onclick="alert('Messages - Coming Soon')">
+                    <a class="nav-link" href="../customer/messages.php?lang=<?php echo $lang; ?>">
                         <i class="fas fa-comments me-1"></i>Messages
                     </a>
-                    <a class="nav-link" href="#" onclick="alert('My Devices - Coming Soon')">
+                    <a class="nav-link" href="../customer/devices.php?lang=<?php echo $lang; ?>">
                         <i class="fas fa-laptop me-1"></i>My Devices
                     </a>
-                    <a class="nav-link" href="#" onclick="alert('Wallet - Coming Soon')">
+                    <a class="nav-link" href="../customer/wallet.php?lang=<?php echo $lang; ?>">
                         <i class="fas fa-wallet me-1"></i>Wallet
                     </a>
-                    <a class="nav-link" href="#" onclick="alert('Support - Coming Soon')">
+                    <a class="nav-link" href="../customer/support.php?lang=<?php echo $lang; ?>">
                         <i class="fas fa-headset me-1"></i>Support
                     </a>
                     
@@ -238,7 +238,7 @@ if ($user_type === 'customer') {
                     <a class="nav-link" href="../provider/create-service.php?lang=<?php echo $lang; ?>">
                         <i class="fas fa-plus me-1"></i>Create Service
                     </a>
-                    <a class="nav-link" href="#" onclick="alert('Messages - Coming Soon')">
+                    <a class="nav-link" href="../provider/messages.php?lang=<?php echo $lang; ?>">
                         <i class="fas fa-comments me-1"></i>Messages
                     </a>
                     <a class="nav-link" href="#" onclick="alert('Calendar - Coming Soon')">

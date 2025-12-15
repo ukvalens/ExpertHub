@@ -61,7 +61,7 @@ $transactions = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             </a>
             <div class="navbar-nav mx-auto">
                 <a class="nav-link" href="../dashboard/index.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">Dashboard</a>
-                <a class="nav-link" href="services.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">My Services</a>
+                <a class="nav-link" href="my-services.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">My Services</a>
                 <a class="nav-link" href="orders.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">Orders</a>
                 <a class="nav-link active" href="earnings.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">Earnings</a>
             </div>

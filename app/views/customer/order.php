@@ -8,6 +8,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'customer') {
 }
 
 $service_id = $_GET['service_id'] ?? null;
+$device_id = $_GET['device_id'] ?? null;
 if (!$service_id) {
     header("Location: browse-services.php");
     exit();
@@ -38,9 +39,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $order_number = 'ORD' . date('Ymd') . rand(1000, 9999);
     
     // Insert order
-    $stmt = $conn->prepare("INSERT INTO orders (order_number, customer_id, provider_id, service_id, service_title, service_description, customer_requirements, quoted_price, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'requested', NOW())");
+    $stmt = $conn->prepare("INSERT INTO orders (order_number, customer_id, provider_id, service_id, device_id, service_title, service_description, customer_requirements, quoted_price, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'requested', NOW())");
     $requirements = json_encode(['description' => $description, 'phone' => $phone, 'address' => $address]);
-    $stmt->bind_param("siiiissd", $order_number, $_SESSION['user_id'], $service['provider_id'], $service_id, $service['title'], $service['description'], $requirements, $service['base_price']);
+    $stmt->bind_param("siiiiissd", $order_number, $_SESSION['user_id'], $service['provider_id'], $service_id, $device_id, $service['title'], $service['description'], $requirements, $service['base_price']);
     
     if ($stmt->execute()) {
         $order_id = $conn->insert_id;

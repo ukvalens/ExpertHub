@@ -56,8 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("s", $payment_ref);
         $stmt->execute();
         
-        // Update order status to confirmed
-        $stmt = $conn->prepare("UPDATE orders SET status = 'confirmed' WHERE id = ?");
+        // Update order status to requested (ready for provider acceptance)
+        $stmt = $conn->prepare("UPDATE orders SET status = 'requested' WHERE id = ?");
         $stmt->bind_param("i", $order_id);
         $stmt->execute();
         

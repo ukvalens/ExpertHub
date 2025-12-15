@@ -82,7 +82,7 @@ $provider_info = $stmt->get_result()->fetch_assoc();
             </a>
             <div class="navbar-nav mx-auto">
                 <a class="nav-link" href="../dashboard/index.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">Dashboard</a>
-                <a class="nav-link" href="services.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">My Services</a>
+                <a class="nav-link" href="my-services.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">My Services</a>
                 <a class="nav-link" href="orders.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">Orders</a>
             </div>
             <div class="dropdown">

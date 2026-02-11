@@ -9,7 +9,7 @@
                     <a href="https://www.facebook.com/profile.php?id=100071330835838" class="text-light"><i class="fab fa-facebook-f"></i></a>
                     <a href="https://x.com/UKWITEGETSEVal1" class="text-light"><i class="fab fa-twitter"></i></a>
                     <a href="https://www.linkedin.com/in/ukwitegetse-valens-b52773356/" class="text-light"><i class="fab fa-linkedin-in"></i></a>
-                    <a href="#" class="text-light"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.instagram.com/ukwitegetsevalens/" class="text-light"><i class="fab fa-instagram"></i></a>
                 </div>
             </div>
             <div class="col-lg-2 mb-4">

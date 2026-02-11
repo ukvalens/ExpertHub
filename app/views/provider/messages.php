@@ -207,9 +207,10 @@ if ($selected_order_id) {
                                 <button class="btn btn-sm btn-outline-success" onclick="toggleVoiceNote()" id="voiceBtn">
                                     <i class="fas fa-microphone"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="alert('File sharing coming soon!')">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('fileInput').click()">
                                     <i class="fas fa-paperclip"></i>
                                 </button>
+                                <input type="file" id="fileInput" style="display: none;" onchange="uploadFile()">
                                 <a href="contact-customer.php?order_id=<?php echo $selected_order['id']; ?>&lang=<?php echo $_GET['lang'] ?? 'en'; ?>" class="btn btn-sm btn-outline-success">
                                     <i class="fas fa-envelope"></i>
                                 </a>
@@ -235,6 +236,13 @@ if ($selected_order_id) {
                                                         <source src="../../../uploads/voice_notes/<?php echo $message['file_path']; ?>" type="audio/wav">
                                                         Voice message
                                                     </audio>
+                                                </div>
+                                            <?php elseif (isset($message['message_type']) && $message['message_type'] === 'file'): ?>
+                                                <div class="file-message">
+                                                    <i class="fas fa-file me-2"></i>
+                                                    <a href="/ExpertHUB/uploads/messages/<?php echo $message['file_path']; ?>" target="_blank" class="text-decoration-none">
+                                                        <?php echo nl2br(htmlspecialchars($message['message_content'])); ?>
+                                                    </a>
                                                 </div>
                                             <?php else: ?>
                                                 <?php echo nl2br(htmlspecialchars($message['message_content'])); ?>
@@ -496,6 +504,33 @@ if ($selected_order_id) {
                     document.getElementById('sendVoiceBtn').disabled = true;
                 });
             }
+        }
+        
+        // File Upload
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('order_id', '<?php echo $selected_order['id']; ?>');
+            formData.append('receiver_id', '<?php echo $selected_order['customer_id']; ?>');
+            
+            fetch('../../api/upload_file.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Upload failed: ' + data.message);
+                }
+            })
+            .catch(() => alert('Upload error'));
         }
     </script>
 </body>

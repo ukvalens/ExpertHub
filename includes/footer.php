@@ -44,7 +44,7 @@
         <hr class="my-4">
         <div class="row align-items-center">
             <div class="col-md-6">
-                <p class="mb-0">&copy; 2025 ExpertHub. All rights reserved.</p>
+                <p class="mb-0">&copy; <?php echo date('Y'); ?> ExpertHub. All rights reserved.</p>
             </div>
             <div class="col-md-6 text-md-end">
                 <p class="mb-0 text-light">Made with <i class="fas fa-heart text-danger"></i> in Rwanda</p>

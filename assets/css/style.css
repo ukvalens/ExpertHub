@@ -178,6 +178,32 @@ section {
     .sidebar {
         min-height: auto;
     }
+    
+    body {
+        padding-top: 60px;
+    }
+    
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+    
+    .service-card {
+        margin-bottom: 1rem;
+    }
+    
+    #ownerCarousel img,
+    #serviceCarousel img {
+        height: 300px;
+    }
+    
+    .footer {
+        padding: 40px 0 20px;
+        text-align: center;
+    }
+    
+    .footer .col-md-6 {
+        text-align: center !important;
+    }
 }
 
 @media (max-width: 576px) {
@@ -187,6 +213,47 @@ section {
     
     .hero-section {
         padding: 40px 0;
+    }
+    
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+    
+    .service-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.3rem;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+    }
+    
+    #ownerCarousel img,
+    #serviceCarousel img {
+        height: 250px;
+    }
+    
+    #ownerCarousel .carousel-control-prev,
+    #ownerCarousel .carousel-control-next,
+    #serviceCarousel .carousel-control-prev,
+    #serviceCarousel .carousel-control-next {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .footer {
+        padding: 30px 0 15px;
+    }
+    
+    .footer h5,
+    .footer h6 {
+        font-size: 1rem;
+        margin-top: 1.5rem;
+    }
+    
+    .footer .d-flex {
+        justify-content: center;
     }
 }
 

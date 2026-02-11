@@ -120,6 +120,7 @@ if ($selected_order_id) {
                 <a class="nav-link" href="my-services.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">My Services</a>
                 <a class="nav-link" href="orders.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">Orders</a>
                 <a class="nav-link active" href="messages.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">Messages</a>
+                <a class="nav-link" href="support.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">Support</a>
             </div>
             <div class="dropdown">
                 <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
@@ -271,13 +272,15 @@ if ($selected_order_id) {
                         
                         <!-- Message Input -->
                         <div class="card-footer">
-                            <form method="POST" class="d-flex">
+                            <form method="POST">
                                 <input type="hidden" name="order_id" value="<?php echo $selected_order['id']; ?>">
                                 <input type="hidden" name="receiver_id" value="<?php echo $selected_order['customer_id']; ?>">
-                                <input type="text" class="form-control me-2" name="message_content" placeholder="Type your message..." required>
-                                <button type="submit" name="send_message" class="btn btn-success">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
+                                <div class="d-flex align-items-end">
+                                    <textarea class="form-control me-2" name="message_content" rows="2" placeholder="Type your message..." required style="resize: none;"></textarea>
+                                    <button type="submit" name="send_message" class="btn btn-success">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     <?php else: ?>

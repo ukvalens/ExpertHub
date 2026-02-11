@@ -5,7 +5,7 @@ require_once '../../../config/database.php';
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'customer') {
     header("Location: ../../../login.php");
     exit();
-}
+}b
 
 $device_id = $_GET['device_id'] ?? null;
 if (!$device_id) {

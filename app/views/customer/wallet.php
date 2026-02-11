@@ -113,7 +113,7 @@ $transactions = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                             <div class="card-body">
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <button class="btn btn-primary w-100" onclick="alert('Add funds feature coming soon!')">
+                                        <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#addFundsModal">
                                             <i class="fas fa-plus me-2"></i>Add Funds
                                         </button>
                                     </div>
@@ -175,7 +175,14 @@ $transactions = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                                                         </td>
                                                         <td>
                                                             <small class="text-muted">
-                                                                <?php echo strtoupper(str_replace('_', ' ', $transaction['payment_method'])); ?>
+                                                                <?php 
+                                                                    $method = $transaction['payment_method'] ?? 'N/A';
+                                                                    if ($method && $method !== 'N/A') {
+                                                                        echo strtoupper(str_replace('_', ' ', $method));
+                                                                    } else {
+                                                                        echo '<span class="text-muted">MOBILE MONEY</span>';
+                                                                    }
+                                                                ?>
                                                             </small>
                                                         </td>
                                                     </tr>
@@ -222,6 +229,36 @@ $transactions = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     </div>
     
     <?php include '../../../includes/footer.php'; ?>
+    
+    <!-- Add Funds Modal -->
+    <div class="modal fade" id="addFundsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Add Funds</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center py-4">
+                        <i class="fas fa-construction fa-3x text-warning mb-3"></i>
+                        <h5>Feature Coming Soon!</h5>
+                        <p class="text-muted">We're working on adding wallet funding functionality. For now, payments are processed directly when you place orders.</p>
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Current Payment Process:</strong><br>
+                            When you place an order, you'll be prompted to pay using Mobile Money (MTN MoMo, Airtel Money) or other available payment methods.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="browse-services.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>" class="btn btn-primary">
+                        <i class="fas fa-shopping-cart me-1"></i>Browse Services
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

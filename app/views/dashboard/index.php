@@ -28,6 +28,15 @@ if ($user_type === 'customer') {
     $stmt->execute();
     $stats = $stmt->get_result()->fetch_assoc();
     
+    // Get saved items count (assuming a saved_services table exists)
+    $stmt = $conn->prepare("SELECT COUNT(*) as saved_count FROM cart_items ci 
+                           JOIN shopping_carts sc ON ci.cart_id = sc.id 
+                           WHERE sc.customer_id = ? AND sc.status = 'active'");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $saved_result = $stmt->get_result()->fetch_assoc();
+    $stats['saved_items'] = $saved_result['saved_count'];
+    
 } elseif ($user_type === 'provider') {
     $stmt = $conn->prepare("SELECT u.*, sp.* FROM users u LEFT JOIN service_providers sp ON u.id = sp.user_id WHERE u.id = ?");
     $stmt->bind_param("i", $user_id);
@@ -38,11 +47,21 @@ if ($user_type === 'customer') {
     $stmt = $conn->prepare("SELECT 
         (SELECT COUNT(*) FROM orders WHERE provider_id = sp.id AND status IN ('accepted', 'in_progress')) as active_orders,
         (SELECT COUNT(*) FROM orders WHERE provider_id = sp.id AND status = 'completed') as completed_orders,
-        (SELECT COUNT(*) FROM provider_services WHERE provider_id = sp.id AND status = 'active') as total_services
+        (SELECT COUNT(*) FROM provider_services WHERE provider_id = sp.id AND status = 'active') as total_services,
+        (SELECT COALESCE(SUM(final_price), 0) FROM orders WHERE provider_id = sp.id AND status = 'completed') as total_earnings,
+        (SELECT AVG(TIMESTAMPDIFF(MINUTE, o.created_at, o.updated_at)) FROM orders o WHERE o.provider_id = sp.id AND o.status = 'accepted') as avg_response_minutes
         FROM service_providers sp WHERE sp.user_id = ?");
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $stats = $stmt->get_result()->fetch_assoc();
+    
+    // Format average response time
+    $avg_minutes = $stats['avg_response_minutes'] ?? 0;
+    if ($avg_minutes < 60) {
+        $stats['avg_response_time'] = round($avg_minutes) . 'm';
+    } else {
+        $stats['avg_response_time'] = round($avg_minutes / 60, 1) . 'h';
+    }
     
 } elseif ($user_type === 'admin') {
     $stmt = $conn->prepare("SELECT u.* FROM users u WHERE u.id = ?");
@@ -353,7 +372,7 @@ if ($user_type === 'customer') {
                             <div class="service-icon">
                                 <i class="fas fa-bookmark"></i>
                             </div>
-                            <h4 class="text-primary">5</h4>
+                            <h4 class="text-primary"><?php echo $stats['saved_items']; ?></h4>
                             <p class="text-muted mb-0">Saved Items</p>
                         </div>
                     </div>
@@ -391,7 +410,7 @@ if ($user_type === 'customer') {
                             <div class="service-icon">
                                 <i class="fas fa-dollar-sign"></i>
                             </div>
-                            <h4 class="text-primary">$<?php echo number_format($user['total_earnings'] ?? 0, 0); ?></h4>
+                            <h4 class="text-primary">$<?php echo number_format($stats['total_earnings'] ?? 0, 0); ?></h4>
                             <p class="text-muted mb-0">Total Earnings</p>
                         </div>
                     </div>
@@ -402,7 +421,7 @@ if ($user_type === 'customer') {
                             <div class="service-icon">
                                 <i class="fas fa-briefcase"></i>
                             </div>
-                            <h4 class="text-primary"><?php echo $stats['total_services']; ?></h4>
+                            <h4 class="text-primary"><?php echo $stats['total_services'] ?? 0; ?></h4>
                             <p class="text-muted mb-0">Active Services</p>
                         </div>
                     </div>
@@ -413,7 +432,7 @@ if ($user_type === 'customer') {
                             <div class="service-icon">
                                 <i class="fas fa-shopping-bag"></i>
                             </div>
-                            <h4 class="text-primary"><?php echo $stats['active_orders']; ?></h4>
+                            <h4 class="text-primary"><?php echo $stats['active_orders'] ?? 0; ?></h4>
                             <p class="text-muted mb-0">Active Orders</p>
                         </div>
                     </div>
@@ -435,7 +454,7 @@ if ($user_type === 'customer') {
                             <div class="service-icon">
                                 <i class="fas fa-clock"></i>
                             </div>
-                            <h4 class="text-primary"><?php echo $user['avg_response_time'] ?? '2h'; ?></h4>
+                            <h4 class="text-primary"><?php echo $stats['avg_response_time'] ?? '0m'; ?></h4>
                             <p class="text-muted mb-0">Avg Response</p>
                         </div>
                     </div>

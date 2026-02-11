@@ -216,6 +216,81 @@ $tables = [
         order_id INT NOT NULL,
         sender_id INT NOT NULL,
         receiver_id INT NOT NULL,
+        message_type ENUM('text', 'file', 'image', 'voice', 'system') DEFAULT 'text',
+        content TEXT,
+        file_path VARCHAR(500),
+        file_name VARCHAR(255),
+        file_size INT,
+        is_read BOOLEAN DEFAULT FALSE,
+        read_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+        FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+    )",
+
+    // Support Tickets table
+    "CREATE TABLE IF NOT EXISTS support_tickets (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        ticket_number VARCHAR(50) UNIQUE NOT NULL,
+        user_id INT NOT NULL,
+        subject VARCHAR(255) NOT NULL,
+        category ENUM('technical', 'billing', 'account', 'service', 'other') NOT NULL,
+        priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
+        status ENUM('open', 'in_progress', 'resolved', 'closed') DEFAULT 'open',
+        message TEXT NOT NULL,
+        assigned_to INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        resolved_at TIMESTAMP NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL
+    )",
+
+    // Payment Requests table
+    "CREATE TABLE IF NOT EXISTS payment_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        order_id INT NOT NULL,
+        provider_id INT NOT NULL,
+        additional_amount DECIMAL(10,2) NOT NULL,
+        reason TEXT NOT NULL,
+        status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (order_id) REFERENCES orders(id),
+        FOREIGN KEY (provider_id) REFERENCES service_providers(id)
+    )",
+
+    // Additional Earnings table
+    "CREATE TABLE IF NOT EXISTS additional_earnings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        order_id INT NOT NULL,
+        provider_id INT NOT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        description TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (order_id) REFERENCES orders(id),
+        FOREIGN KEY (provider_id) REFERENCES service_providers(id)
+    )"
+];
+
+// Create tables
+foreach ($tables as $sql) {
+    if ($conn->query($sql) === TRUE) {
+        echo "Table created successfully.<br>";
+    } else {
+        echo "Error creating table: " . $conn->error . "<br>";
+    }
+}
+
+echo "Database setup completed!";
+$conn->close();
+?>
+    "CREATE TABLE IF NOT EXISTS messages (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        order_id INT NOT NULL,
+        sender_id INT NOT NULL,
+        receiver_id INT NOT NULL,
         message_type ENUM('text', 'file', 'system', 'video_call', 'screen_share') DEFAULT 'text',
         message_content TEXT,
         file_attachments JSON,

@@ -9,6 +9,41 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'customer') {
 
 $user_id = $_SESSION['user_id'];
 
+// Handle file upload
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_attachment'])) {
+    $order_id = $_POST['order_id'];
+    $file = $_FILES['file_attachment'];
+    
+    // Create uploads directory if it doesn't exist
+    $upload_dir = '../../../uploads/messages/';
+    if (!file_exists($upload_dir)) {
+        mkdir($upload_dir, 0777, true);
+    }
+    
+    // Generate unique filename
+    $file_extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $unique_filename = uniqid() . '_' . time() . '.' . $file_extension;
+    $file_path = $upload_dir . $unique_filename;
+    
+    if (move_uploaded_file($file['tmp_name'], $file_path)) {
+        // Get provider user_id
+        $stmt = $conn->prepare("SELECT sp.user_id FROM orders o JOIN service_providers sp ON o.provider_id = sp.id WHERE o.id = ?");
+        $stmt->bind_param("i", $order_id);
+        $stmt->execute();
+        $provider_user = $stmt->get_result()->fetch_assoc();
+        $receiver_id = $provider_user['user_id'];
+        
+        // Insert message with file
+        $stmt = $conn->prepare("INSERT INTO messages (order_id, sender_id, receiver_id, message_type, message_content, file_path, file_name, file_size, created_at) VALUES (?, ?, ?, 'file', ?, ?, ?, ?, NOW())");
+        $message_content = 'Sent a file: ' . $file['name'];
+        $stmt->bind_param("iiisssi", $order_id, $user_id, $receiver_id, $message_content, $unique_filename, $file['name'], $file['size']);
+        $stmt->execute();
+        
+        header("Location: messages.php?order_id=$order_id&lang=" . ($_GET['lang'] ?? 'en'));
+        exit();
+    }
+}
+
 // Handle new message
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
     $order_id = $_POST['order_id'];
@@ -193,9 +228,13 @@ if ($selected_order_id) {
                                 <button class="btn btn-sm btn-outline-success" onclick="toggleVoiceNote()" id="voiceBtn">
                                     <i class="fas fa-microphone"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="alert('File sharing coming soon!')">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('fileInput').click()">
                                     <i class="fas fa-paperclip"></i>
                                 </button>
+                                <form id="fileUploadForm" method="POST" enctype="multipart/form-data" style="display: none;">
+                                    <input type="hidden" name="order_id" value="<?php echo $selected_order['id']; ?>">
+                                    <input type="file" id="fileInput" name="file_attachment" onchange="document.getElementById('fileUploadForm').submit()">
+                                </form>
                             </div>
                         </div>
 
@@ -211,7 +250,15 @@ if ($selected_order_id) {
                                 <?php foreach ($messages as $message): ?>
                                     <div class="message mb-3 <?php echo $message['sender_id'] == $user_id ? 'text-end' : ''; ?>">
                                         <div class="d-inline-block p-2 rounded <?php echo $message['sender_id'] == $user_id ? 'bg-primary text-white' : 'bg-light'; ?>" style="max-width: 70%;">
-                                            <?php if (isset($message['message_type']) && $message['message_type'] === 'voice'): ?>
+                                            <?php if (isset($message['message_type']) && $message['message_type'] === 'file'): ?>
+                                                <div class="file-message">
+                                                    <i class="fas fa-file me-2"></i>
+                                                    <a href="../../../uploads/messages/<?php echo $message['file_path']; ?>" download="<?php echo $message['file_name']; ?>" class="<?php echo $message['sender_id'] == $user_id ? 'text-white' : 'text-dark'; ?>">
+                                                        <?php echo htmlspecialchars($message['file_name']); ?>
+                                                    </a>
+                                                    <small class="d-block mt-1"><?php echo round($message['file_size'] / 1024, 2); ?> KB</small>
+                                                </div>
+                                            <?php elseif (isset($message['message_type']) && $message['message_type'] === 'voice'): ?>
                                                 <div class="voice-message">
                                                     <i class="fas fa-microphone me-2"></i>
                                                     <audio controls style="max-width: 200px;">
@@ -255,12 +302,14 @@ if ($selected_order_id) {
                         
                         <!-- Message Input -->
                         <div class="card-footer">
-                            <form method="POST" class="d-flex">
+                            <form method="POST">
                                 <input type="hidden" name="order_id" value="<?php echo $selected_order['id']; ?>">
-                                <input type="text" class="form-control me-2" name="message_content" placeholder="Type your message..." required>
-                                <button type="submit" name="send_message" class="btn btn-primary">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
+                                <div class="d-flex align-items-end">
+                                    <textarea class="form-control me-2" name="message_content" rows="2" placeholder="Type your message..." required style="resize: none;"></textarea>
+                                    <button type="submit" name="send_message" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     <?php else: ?>

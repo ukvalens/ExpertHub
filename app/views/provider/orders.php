@@ -116,6 +116,7 @@ $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                 <a class="nav-link" href="../dashboard/index.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">Dashboard</a>
                 <a class="nav-link" href="my-services.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">My Services</a>
                 <a class="nav-link active" href="orders.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">Orders</a>
+                <a class="nav-link" href="support.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">Support</a>
             </div>
             <div class="dropdown">
                 <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">

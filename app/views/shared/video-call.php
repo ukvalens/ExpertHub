@@ -97,35 +97,88 @@ if (!$order) {
 
     <script>
         let localStream;
+        let peerConnection;
         let isAudioMuted = false;
         let isVideoMuted = false;
+        let isInitiator = '<?php echo $_SESSION['user_type']; ?>' === 'customer';
 
         const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
         const statusIndicator = document.getElementById('connectionStatus');
+
+        // WebRTC configuration
+        const configuration = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
 
         async function initializeCall() {
             try {
+                // Get user media
                 localStream = await navigator.mediaDevices.getUserMedia({
-                    video: true,
-                    audio: true
+                    video: { width: 1280, height: 720 },
+                    audio: { echoCancellation: true, noiseSuppression: true }
                 });
                 
                 localVideo.srcObject = localStream;
-                statusIndicator.textContent = 'Connected';
-                statusIndicator.className = 'status-indicator text-success';
                 
-                // Notify provider of incoming call
-                if ('<?php echo $_SESSION['user_type']; ?>' === 'customer') {
-                    fetch('../../api/start_call.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ order_id: <?php echo $order_id; ?> })
-                    });
-                }
+                // Create peer connection
+                peerConnection = new RTCPeerConnection(configuration);
+                
+                // Add local stream to peer connection
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+                
+                // Handle remote stream
+                peerConnection.ontrack = (event) => {
+                    remoteVideo.srcObject = event.streams[0];
+                    statusIndicator.textContent = 'Connected';
+                    statusIndicator.className = 'status-indicator text-success';
+                };
+                
+                // Handle connection state changes
+                peerConnection.onconnectionstatechange = () => {
+                    const state = peerConnection.connectionState;
+                    statusIndicator.textContent = state.charAt(0).toUpperCase() + state.slice(1);
+                    
+                    if (state === 'connected') {
+                        statusIndicator.className = 'status-indicator text-success';
+                    } else if (state === 'disconnected' || state === 'failed') {
+                        statusIndicator.className = 'status-indicator text-danger';
+                    } else {
+                        statusIndicator.className = 'status-indicator text-warning';
+                    }
+                };
+                
+                // Handle ICE candidates
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        // In a real implementation, send this to the other peer
+                        console.log('ICE candidate:', event.candidate);
+                    }
+                };
+                
+                statusIndicator.textContent = 'Camera and microphone ready';
+                statusIndicator.className = 'status-indicator text-info';
+                
+                // Simulate connection for demo purposes
+                setTimeout(() => {
+                    statusIndicator.textContent = 'Waiting for other participant...';
+                    statusIndicator.className = 'status-indicator text-warning';
+                }, 1000);
                 
             } catch (error) {
+                console.error('Error accessing media devices:', error);
                 statusIndicator.textContent = 'Camera/Microphone access denied';
                 statusIndicator.className = 'status-indicator text-danger';
+                
+                // Show instructions
+                setTimeout(() => {
+                    alert('Please allow camera and microphone access for video calling. Refresh the page and try again.');
+                }, 1000);
             }
         }
 
@@ -163,25 +216,55 @@ if (!$order) {
                     if (isVideoMuted) {
                         videoBtn.className = 'control-btn btn-danger';
                         icon.className = 'fas fa-video-slash';
+                        localVideo.style.display = 'none';
                     } else {
                         videoBtn.className = 'control-btn btn-secondary';
                         icon.className = 'fas fa-video';
+                        localVideo.style.display = 'block';
                     }
                 }
             }
         }
 
         function endCall() {
+            // Clean up streams and connections
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
             }
             
+            if (peerConnection) {
+                peerConnection.close();
+            }
+            
+            // Redirect back to messages
             const userType = '<?php echo $_SESSION['user_type']; ?>';
             const redirectPath = userType === 'customer' ? '../customer/messages.php' : '../provider/messages.php';
             window.location.href = redirectPath + '?order_id=<?php echo $order_id; ?>&lang=<?php echo $_GET['lang'] ?? 'en'; ?>';
         }
 
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            if (peerConnection) {
+                peerConnection.close();
+            }
+        });
+
+        // Initialize call when page loads
         window.addEventListener('load', initializeCall);
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'KeyM') {
+                toggleMute();
+            } else if (event.code === 'KeyV') {
+                toggleVideo();
+            } else if (event.code === 'Escape') {
+                endCall();
+            }
+        });
     </script>
 </body>
 </html>

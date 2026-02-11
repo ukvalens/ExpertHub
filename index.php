@@ -197,6 +197,86 @@
         </div>
     </section>
 
+    <!-- About Section -->
+    <section id="about" class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">About ExpertHub</h2>
+                <p class="text-muted">Meet our team and explore our services</p>
+            </div>
+            
+            <?php
+            require_once 'config/database.php';
+            $owner_photos = $conn->query("SELECT * FROM about_photos WHERE type = 'owner' ORDER BY created_at DESC")->fetch_all(MYSQLI_ASSOC);
+            $service_photos = $conn->query("SELECT * FROM about_photos WHERE type = 'service' ORDER BY created_at DESC")->fetch_all(MYSQLI_ASSOC);
+            ?>
+            
+            <div class="row mb-5">
+                <div class="col-lg-6 mb-4">
+                    <h4 class="mb-3"><i class="fas fa-user-tie me-2"></i>Our Team</h4>
+                    <?php if (!empty($owner_photos)): ?>
+                        <div id="ownerCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
+                            <div class="carousel-indicators">
+                                <?php foreach ($owner_photos as $i => $photo): ?>
+                                    <button type="button" data-bs-target="#ownerCarousel" data-bs-slide-to="<?php echo $i; ?>" <?php echo $i === 0 ? 'class="active"' : ''; ?>></button>
+                                <?php endforeach; ?>
+                            </div>
+                            <div class="carousel-inner rounded shadow">
+                                <?php foreach ($owner_photos as $i => $photo): ?>
+                                    <div class="carousel-item <?php echo $i === 0 ? 'active' : ''; ?>">
+                                        <img src="/ExpertHUB/uploads/about/<?php echo $photo['photo_path']; ?>" class="d-block w-100" style="height: 400px; object-fit: cover;">
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <button class="carousel-control-prev" type="button" data-bs-target="#ownerCarousel" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon"></span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#ownerCarousel" data-bs-slide="next">
+                                <span class="carousel-control-next-icon"></span>
+                            </button>
+                        </div>
+                    <?php else: ?>
+                        <div class="text-center p-5 bg-white rounded">
+                            <i class="fas fa-user-circle fa-5x text-muted mb-3"></i>
+                            <p class="text-muted">No photos available</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                
+                <div class="col-lg-6 mb-4">
+                    <h4 class="mb-3"><i class="fas fa-briefcase me-2"></i>Our Services</h4>
+                    <?php if (!empty($service_photos)): ?>
+                        <div id="serviceCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
+                            <div class="carousel-indicators">
+                                <?php foreach ($service_photos as $i => $photo): ?>
+                                    <button type="button" data-bs-target="#serviceCarousel" data-bs-slide-to="<?php echo $i; ?>" <?php echo $i === 0 ? 'class="active"' : ''; ?>></button>
+                                <?php endforeach; ?>
+                            </div>
+                            <div class="carousel-inner rounded shadow">
+                                <?php foreach ($service_photos as $i => $photo): ?>
+                                    <div class="carousel-item <?php echo $i === 0 ? 'active' : ''; ?>">
+                                        <img src="/ExpertHUB/uploads/about/<?php echo $photo['photo_path']; ?>" class="d-block w-100" style="height: 400px; object-fit: cover;">
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <button class="carousel-control-prev" type="button" data-bs-target="#serviceCarousel" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon"></span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#serviceCarousel" data-bs-slide="next">
+                                <span class="carousel-control-next-icon"></span>
+                            </button>
+                        </div>
+                    <?php else: ?>
+                        <div class="text-center p-5 bg-white rounded">
+                            <i class="fas fa-briefcase fa-5x text-muted mb-3"></i>
+                            <p class="text-muted">No photos available</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <?php include 'includes/footer.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

@@ -89,10 +89,10 @@ $service_photos = $conn->query("SELECT * FROM about_photos WHERE type = 'service
                         <hr>
                         <div class="row g-2">
                             <?php foreach ($owner_photos as $photo): ?>
-                                <div class="col-6">
+                                <div class="col-6 mb-3">
                                     <div class="position-relative">
-                                        <img src="/ExpertHUB/uploads/about/<?php echo $photo['photo_path']; ?>" class="img-fluid rounded">
-                                        <a href="?delete=<?php echo $photo['id']; ?>" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" onclick="return confirm('Delete?')">
+                                        <img src="/ExpertHUB/uploads/about/<?php echo $photo['photo_path']; ?>" class="img-fluid rounded" style="width: 100%; height: 150px; object-fit: cover;">
+                                        <a href="?delete=<?php echo $photo['id']; ?>" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" onclick="return confirm('Delete?')" style="z-index: 10;">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </div>
@@ -119,10 +119,10 @@ $service_photos = $conn->query("SELECT * FROM about_photos WHERE type = 'service
                         <hr>
                         <div class="row g-2">
                             <?php foreach ($service_photos as $photo): ?>
-                                <div class="col-6">
+                                <div class="col-6 mb-3">
                                     <div class="position-relative">
-                                        <img src="/ExpertHUB/uploads/about/<?php echo $photo['photo_path']; ?>" class="img-fluid rounded">
-                                        <a href="?delete=<?php echo $photo['id']; ?>" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" onclick="return confirm('Delete?')">
+                                        <img src="/ExpertHUB/uploads/about/<?php echo $photo['photo_path']; ?>" class="img-fluid rounded" style="width: 100%; height: 150px; object-fit: cover;">
+                                        <a href="?delete=<?php echo $photo['id']; ?>" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" onclick="return confirm('Delete?')" style="z-index: 10;">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </div>

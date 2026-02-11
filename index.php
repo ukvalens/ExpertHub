@@ -6,7 +6,7 @@
     <title>ExpertHub - Online Service Marketplace</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="assets/css/style.css?v=11" rel="stylesheet">
 
 </head>
 <body>
@@ -26,9 +26,6 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#services">Services</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#how-it-works">How It Works</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#about">About</a>
@@ -173,30 +170,6 @@
         </div>
     </section>
 
-    <!-- Stats Section -->
-    <section class="stats-section">
-        <div class="container">
-            <div class="row text-center">
-                <div class="col-md-3 mb-4">
-                    <div class="stat-number">10K+</div>
-                    <p class="text-muted">Active Users</p>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="stat-number">5K+</div>
-                    <p class="text-muted">Completed Projects</p>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="stat-number">2K+</div>
-                    <p class="text-muted">Expert Professionals</p>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="stat-number">98%</div>
-                    <p class="text-muted">Client Satisfaction</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- About Section -->
     <section id="about" class="py-5 bg-light">
         <div class="container">
@@ -211,20 +184,15 @@
             $service_photos = $conn->query("SELECT * FROM about_photos WHERE type = 'service' ORDER BY created_at DESC")->fetch_all(MYSQLI_ASSOC);
             ?>
             
-            <div class="row mb-5">
+            <div class="row">
                 <div class="col-lg-6 mb-4">
-                    <h4 class="mb-3"><i class="fas fa-user-tie me-2"></i>Our Team</h4>
+                    <h4 class="text-center mb-4"><i class="fas fa-user-tie me-2"></i>Our Team</h4>
                     <?php if (!empty($owner_photos)): ?>
-                        <div id="ownerCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
-                            <div class="carousel-indicators">
-                                <?php foreach ($owner_photos as $i => $photo): ?>
-                                    <button type="button" data-bs-target="#ownerCarousel" data-bs-slide-to="<?php echo $i; ?>" <?php echo $i === 0 ? 'class="active"' : ''; ?>></button>
-                                <?php endforeach; ?>
-                            </div>
-                            <div class="carousel-inner rounded shadow">
+                        <div id="ownerCarousel" class="carousel slide" data-bs-ride="carousel">
+                            <div class="carousel-inner">
                                 <?php foreach ($owner_photos as $i => $photo): ?>
                                     <div class="carousel-item <?php echo $i === 0 ? 'active' : ''; ?>">
-                                        <img src="/ExpertHUB/uploads/about/<?php echo $photo['photo_path']; ?>" class="d-block w-100" style="height: 400px; object-fit: cover;">
+                                        <img src="/ExpertHUB/uploads/about/<?php echo $photo['photo_path']; ?>" alt="Team">
                                     </div>
                                 <?php endforeach; ?>
                             </div>
@@ -244,18 +212,13 @@
                 </div>
                 
                 <div class="col-lg-6 mb-4">
-                    <h4 class="mb-3"><i class="fas fa-briefcase me-2"></i>Our Services</h4>
+                    <h4 class="text-center mb-4"><i class="fas fa-briefcase me-2"></i>Our Services</h4>
                     <?php if (!empty($service_photos)): ?>
-                        <div id="serviceCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
-                            <div class="carousel-indicators">
-                                <?php foreach ($service_photos as $i => $photo): ?>
-                                    <button type="button" data-bs-target="#serviceCarousel" data-bs-slide-to="<?php echo $i; ?>" <?php echo $i === 0 ? 'class="active"' : ''; ?>></button>
-                                <?php endforeach; ?>
-                            </div>
-                            <div class="carousel-inner rounded shadow">
+                        <div id="serviceCarousel" class="carousel slide" data-bs-ride="carousel">
+                            <div class="carousel-inner">
                                 <?php foreach ($service_photos as $i => $photo): ?>
                                     <div class="carousel-item <?php echo $i === 0 ? 'active' : ''; ?>">
-                                        <img src="/ExpertHUB/uploads/about/<?php echo $photo['photo_path']; ?>" class="d-block w-100" style="height: 400px; object-fit: cover;">
+                                        <img src="/ExpertHUB/uploads/about/<?php echo $photo['photo_path']; ?>" alt="Service">
                                     </div>
                                 <?php endforeach; ?>
                             </div>
@@ -280,5 +243,11 @@
     <?php include 'includes/footer.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        setInterval(() => {
+            bootstrap.Carousel.getOrCreateInstance(document.getElementById('ownerCarousel')).next();
+            bootstrap.Carousel.getOrCreateInstance(document.getElementById('serviceCarousel')).next();
+        }, 3000);
+    </script>
 </body>
 </html>

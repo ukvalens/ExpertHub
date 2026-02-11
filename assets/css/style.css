@@ -15,6 +15,7 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--text-color);
     background-color: var(--background-color);
+    scroll-behavior: smooth;
 }
 
 .auth-body {
@@ -94,6 +95,10 @@ body {
 
 body {
     padding-top: 76px;
+}
+
+section {
+    scroll-margin-top: 76px;
 }
 
 .hero-section {
@@ -184,3 +189,65 @@ body {
         padding: 40px 0;
     }
 }
+
+#about h4 {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+#about h4 i {
+    color: var(--accent-color);
+}
+
+#ownerCarousel,
+#serviceCarousel {
+    background: var(--white);
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 119, 182, 0.1);
+    overflow: hidden;
+    position: relative;
+}
+
+#ownerCarousel .carousel-inner,
+#serviceCarousel .carousel-inner {
+    background: var(--white);
+}
+
+#ownerCarousel img,
+#serviceCarousel img {
+    width: 100%;
+    height: 450px;
+    object-fit: cover;
+    object-position: top;
+}
+
+#ownerCarousel .carousel-control-prev,
+#ownerCarousel .carousel-control-next,
+#serviceCarousel .carousel-control-prev,
+#serviceCarousel .carousel-control-next {
+    width: 50px;
+    height: 50px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--accent-color);
+    border-radius: 50%;
+    opacity: 0.8;
+}
+
+#ownerCarousel .carousel-control-prev,
+#serviceCarousel .carousel-control-prev {
+    left: 10px;
+}
+
+#ownerCarousel .carousel-control-next,
+#serviceCarousel .carousel-control-next {
+    right: 10px;
+}
+
+#ownerCarousel .carousel-control-prev:hover,
+#ownerCarousel .carousel-control-next:hover,
+#serviceCarousel .carousel-control-prev:hover,
+#serviceCarousel .carousel-control-next:hover {
+    opacity: 1;
+}
+

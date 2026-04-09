@@ -73,6 +73,7 @@ if ($user_type === 'customer') {
 $page_map = [
     // customer
     'browse-services'  => '../customer/browse-services.php',
+    'categories'       => '../customer/categories.php',
     'orders'           => '../customer/orders.php',
     'messages'         => '../customer/' . ($user_type === 'provider' ? '' : '') . 'messages.php',
     'devices'          => '../customer/devices.php',
@@ -169,8 +170,8 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <a href="index.php?lang=<?php echo $lang; ?>" class="active"><i class="fas fa-home"></i>Dashboard</a>
 
             <div class="section-label">🛒 Services</div>
-            <a href="../customer/browse-services.php?lang=<?php echo $lang; ?>"><i class="fas fa-search"></i>Browse Services</a>
-            <a href="../customer/categories.php?lang=<?php echo $lang; ?>"><i class="fas fa-th-large"></i>Categories</a>
+            <a href="#" data-page="browse-services"><i class="fas fa-search"></i>Browse Services</a>
+            <a href="#" data-page="categories"><i class="fas fa-th-large"></i>Categories</a>
             <a href="../customer/search-services.php?lang=<?php echo $lang; ?>"><i class="fas fa-filter"></i>Search Services</a>
             <a href="../customer/compare-services.php?lang=<?php echo $lang; ?>"><i class="fas fa-balance-scale"></i>Compare Services</a>
             <a href="../customer/saved-services.php?lang=<?php echo $lang; ?>"><i class="fas fa-bookmark"></i>Saved Services</a>

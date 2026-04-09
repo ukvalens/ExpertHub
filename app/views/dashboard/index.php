@@ -217,7 +217,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
 
             <div class="section-label">🛠 Services</div>
             <a href="#" data-page="my-services"><i class="fas fa-briefcase"></i>My Services</a>
-            <a href="../provider/create-service.php?lang=<?php echo $lang; ?>"><i class="fas fa-plus"></i>Create Service</a>
+            <a href="#" data-page="create-service"><i class="fas fa-plus"></i>Create Service</a>
             <a href="../provider/templates.php?lang=<?php echo $lang; ?>"><i class="fas fa-copy"></i>Service Templates</a>
             <a href="../provider/portfolio.php?lang=<?php echo $lang; ?>"><i class="fas fa-images"></i>Portfolio</a>
 

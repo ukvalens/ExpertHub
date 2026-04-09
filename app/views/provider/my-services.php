@@ -1,15 +1,15 @@
 <?php
-if (!isset($conn)) { require_once '../../../config/database.php'; }
+if (!isset($conn)) {
+    session_start();
+    require_once '../../../config/database.php';
+    $lang = $_GET['lang'] ?? 'en';
+    header("Location: ../dashboard/index.php?page=my-services&lang=$lang");
+    exit;
+}
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'provider') {
-    header("Location: ../../../login.php"); exit;
-}
-
-// Redirect direct access to dashboard
-if (empty($_SERVER['HTTP_X_REQUESTED_WITH']) && !isset($_POST['toggle_status'])) {
-    $lang = $_GET['lang'] ?? 'en';
-    header("Location: ../dashboard/index.php?page=my-services&lang=$lang"); exit;
+    echo '<div class="alert alert-danger">Access denied.</div>'; return;
 }
 
 $user_id = $_SESSION['user_id'];

@@ -117,6 +117,7 @@ $page_map = [
     'wallet'           => '../customer/wallet.php',
     'support'          => '../customer/support.php',
     'tickets'          => '../customer/tickets.php',
+    'help'             => '../customer/help.php',
     'profile'          => '../' . $user_type . '/profile.php',
     // provider
     'my-services'      => '../provider/my-services.php',
@@ -294,7 +295,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <a href="../customer/refunds.php?lang=<?php echo $lang; ?>"><i class="fas fa-undo"></i>Refunds</a>
 
             <div class="section-label">🆘 Support</div>
-            <a href="../customer/help.php?lang=<?php echo $lang; ?>"><i class="fas fa-question-circle"></i>Help Center</a>
+            <a href="#" data-page="help"><i class="fas fa-question-circle"></i>Help Center</a>
             <a href="#" data-page="tickets"><i class="fas fa-ticket-alt"></i>Support Tickets</a>
             <a href="../customer/contact.php?lang=<?php echo $lang; ?>"><i class="fas fa-headset"></i>Contact Support</a>
 

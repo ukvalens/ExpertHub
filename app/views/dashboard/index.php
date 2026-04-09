@@ -136,6 +136,7 @@ $page_map = [
     'provider-messages'=> '../provider/messages.php',
     'provider-support' => '../provider/support.php',
     // admin
+    'customers'        => '../admin/customers.php',
     'manage-photos'    => '../admin/manage_about.php',
 ];
 
@@ -366,7 +367,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <a href="../admin/analytics.php"><i class="fas fa-chart-pie"></i>Analytics Overview</a>
 
             <div class="section-label">👤 Users</div>
-            <a href="../admin/customers.php"><i class="fas fa-user"></i>Customers</a>
+            <a href="#" data-page="customers"><i class="fas fa-user"></i>Customers</a>
             <a href="../admin/providers.php"><i class="fas fa-user-tie"></i>Providers</a>
             <a href="../admin/admins.php"><i class="fas fa-user-shield"></i>Admins</a>
             <a href="../admin/verification.php"><i class="fas fa-id-badge"></i>Verification</a>

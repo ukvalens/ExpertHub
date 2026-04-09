@@ -83,6 +83,7 @@ $page_map = [
     'my-services'      => '../provider/my-services.php',
     'create-service'   => '../provider/create-service.php',
     'provider-orders'  => '../provider/orders.php',
+    'order-board'      => '../provider/order-board.php',
     'earnings'         => '../provider/earnings.php',
     'provider-messages'=> '../provider/messages.php',
     'provider-support' => '../provider/support.php',
@@ -201,10 +202,10 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <a href="index.php?lang=<?php echo $lang; ?>" class="active"><i class="fas fa-home"></i>Dashboard</a>
 
             <div class="section-label">📦 Orders</div>
-            <a href="../provider/orders.php?lang=<?php echo $lang; ?>"><i class="fas fa-shopping-bag"></i>All Orders</a>
-            <a href="../provider/orders.php?status=active&lang=<?php echo $lang; ?>"><i class="fas fa-spinner"></i>Active Orders</a>
-            <a href="../provider/orders.php?status=completed&lang=<?php echo $lang; ?>"><i class="fas fa-check-circle"></i>Completed Orders</a>
-            <a href="../provider/order-board.php?lang=<?php echo $lang; ?>"><i class="fas fa-columns"></i>Order Board</a>
+            <a href="#" data-page="provider-orders"><i class="fas fa-shopping-bag"></i>All Orders</a>
+            <a href="#" data-page="provider-orders" data-status="active"><i class="fas fa-spinner"></i>Active Orders</a>
+            <a href="#" data-page="provider-orders" data-status="completed"><i class="fas fa-check-circle"></i>Completed Orders</a>
+            <a href="#" data-page="order-board"><i class="fas fa-columns"></i>Order Board</a>
 
             <div class="section-label">📥 Requests</div>
             <a href="../provider/requests.php?lang=<?php echo $lang; ?>"><i class="fas fa-inbox"></i>New Requests</a>
@@ -362,22 +363,23 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
         });
 
         // AJAX page loader
-        function loadPage(page, pushState = true) {
+        function loadPage(page, pushState = true, extra = {}) {
             mainContent.innerHTML = '<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i></div>';
 
-            fetch('index.php?page=' + page + '&lang=<?php echo $lang; ?>', {
+            let params = 'page=' + page + '&lang=<?php echo $lang; ?>';
+            if (extra.status) params += '&status=' + extra.status;
+
+            fetch('index.php?' + params, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
             .then(r => r.text())
             .then(html => {
                 mainContent.innerHTML = html;
-                // Re-run any scripts in loaded content
                 mainContent.querySelectorAll('script').forEach(s => {
                     const ns = document.createElement('script');
                     ns.textContent = s.textContent;
                     document.body.appendChild(ns);
                 });
-                // Re-bind ajax links in loaded content
                 bindAjaxLinks();
             })
             .catch(() => {
@@ -386,14 +388,13 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
 
             // Update active link
             document.querySelectorAll('.dashboard-sidebar a[data-page]').forEach(a => {
-                a.classList.toggle('active', a.dataset.page === page);
+                a.classList.toggle('active', a.dataset.page === page && (a.dataset.status || '') === (extra.status || ''));
             });
 
             if (pushState) {
-                history.pushState({ page }, '', 'index.php?page=' + page + '&lang=<?php echo $lang; ?>');
+                history.pushState({ page, extra }, '', 'index.php?' + params);
             }
 
-            // Close sidebar on mobile
             sidebar.classList.remove('open');
             overlay.classList.remove('open');
         }
@@ -402,7 +403,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             document.querySelectorAll('.nav-link-ajax').forEach(a => {
                 a.addEventListener('click', e => {
                     e.preventDefault();
-                    loadPage(a.dataset.page);
+                    loadPage(a.dataset.page, true, a.dataset.status ? { status: a.dataset.status } : {});
                 });
             });
         }
@@ -411,7 +412,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
         document.querySelectorAll('.dashboard-sidebar a[data-page]').forEach(a => {
             a.addEventListener('click', e => {
                 e.preventDefault();
-                loadPage(a.dataset.page);
+                loadPage(a.dataset.page, true, a.dataset.status ? { status: a.dataset.status } : {});
             });
         });
 
@@ -421,7 +422,8 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
         // Handle browser back/forward
         window.addEventListener('popstate', e => {
             const page = e.state?.page || 'dashboard';
-            loadPage(page, false);
+            const extra = e.state?.extra || {};
+            loadPage(page, false, extra);
         });
     </script>
 </body>

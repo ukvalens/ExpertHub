@@ -94,7 +94,7 @@ $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         <!-- Filter Tabs -->
         <div class="btn-group mb-3 flex-wrap" role="group">
             <?php foreach (['all' => 'All ('.$counts['total'].')', 'requested' => 'New ('.$counts['requested_count'].')', 'accepted' => 'Accepted ('.$counts['accepted_count'].')', 'in_progress' => 'Active ('.$counts['in_progress_count'].')', 'completed' => 'Done ('.$counts['completed_count'].')'] as $s => $label): ?>
-                <a href="?page=provider-orders&status=<?php echo $s; ?>" class="btn btn-sm <?php echo $status_filter === $s ? 'btn-primary' : 'btn-outline-primary'; ?> nav-link-ajax" data-page="provider-orders"><?php echo $label; ?></a>
+                <a href="?page=provider-orders&status=<?php echo $s; ?>" class="btn btn-sm <?php echo $status_filter === $s ? 'btn-primary' : 'btn-outline-primary'; ?> nav-link-ajax" data-page="provider-orders" data-status="<?php echo $s; ?>"><?php echo $label; ?></a>
             <?php endforeach; ?>
         </div>
 
@@ -151,9 +151,9 @@ $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
             <?php if ($total_pages > 1): ?>
                 <nav><ul class="pagination justify-content-center">
-                    <?php if ($orders_page > 1): ?><li class="page-item"><a class="page-link nav-link-ajax" data-page="provider-orders" href="?page=provider-orders&status=<?php echo $status_filter; ?>&orders_page=<?php echo $orders_page-1; ?>">Prev</a></li><?php endif; ?>
-                    <?php for ($i = 1; $i <= $total_pages; $i++): ?><li class="page-item <?php echo $i === $orders_page ? 'active' : ''; ?>"><a class="page-link nav-link-ajax" data-page="provider-orders" href="?page=provider-orders&status=<?php echo $status_filter; ?>&orders_page=<?php echo $i; ?>"><?php echo $i; ?></a></li><?php endfor; ?>
-                    <?php if ($orders_page < $total_pages): ?><li class="page-item"><a class="page-link nav-link-ajax" data-page="provider-orders" href="?page=provider-orders&status=<?php echo $status_filter; ?>&orders_page=<?php echo $orders_page+1; ?>">Next</a></li><?php endif; ?>
+                    <?php if ($orders_page > 1): ?><li class="page-item"><a class="page-link nav-link-ajax" data-page="provider-orders" data-status="<?php echo $status_filter; ?>" href="?page=provider-orders&status=<?php echo $status_filter; ?>&orders_page=<?php echo $orders_page-1; ?>">Prev</a></li><?php endif; ?>
+                    <?php for ($i = 1; $i <= $total_pages; $i++): ?><li class="page-item <?php echo $i === $orders_page ? 'active' : ''; ?>"><a class="page-link nav-link-ajax" data-page="provider-orders" data-status="<?php echo $status_filter; ?>" href="?page=provider-orders&status=<?php echo $status_filter; ?>&orders_page=<?php echo $i; ?>"><?php echo $i; ?></a></li><?php endfor; ?>
+                    <?php if ($orders_page < $total_pages): ?><li class="page-item"><a class="page-link nav-link-ajax" data-page="provider-orders" data-status="<?php echo $status_filter; ?>" href="?page=provider-orders&status=<?php echo $status_filter; ?>&orders_page=<?php echo $orders_page+1; ?>">Next</a></li><?php endif; ?>
                 </ul></nav>
             <?php endif; ?>
         <?php endif; ?>

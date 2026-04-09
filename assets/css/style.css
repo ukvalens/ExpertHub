@@ -52,7 +52,6 @@ body.auth-body {
 /* SECTIONS */
 section {
     scroll-margin-top: 76px;
-    min-height: calc(100vh - 76px);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -312,10 +311,14 @@ body.dashboard-body {
 /* MAIN WRAPPER */
 .main-wrapper {
     grid-area: main;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .main-content {
     padding: 20px;
+    min-height: 100%;
 }
 
 /* STAT CARDS */

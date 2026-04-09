@@ -136,15 +136,15 @@ $services = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             <?php if ($total_pages > 1): ?>
             <nav class="mt-3"><ul class="pagination justify-content-center">
                 <?php if ($svc_page > 1): ?>
-                    <li class="page-item"><a class="page-link nav-link-ajax" data-page="my-services" href="?page=my-services&spage=<?php echo $svc_page - 1; ?>">Prev</a></li>
+                    <li class="page-item"><a class="page-link" href="#" onclick="svcGoPage(<?php echo $svc_page-1; ?>);return false;">Prev</a></li>
                 <?php endif; ?>
                 <?php for ($i = 1; $i <= $total_pages; $i++): ?>
                     <li class="page-item <?php echo $i === $svc_page ? 'active' : ''; ?>">
-                        <a class="page-link nav-link-ajax" data-page="my-services" href="?page=my-services&spage=<?php echo $i; ?>"><?php echo $i; ?></a>
+                        <a class="page-link" href="#" onclick="svcGoPage(<?php echo $i; ?>);return false;"><?php echo $i; ?></a>
                     </li>
                 <?php endfor; ?>
                 <?php if ($svc_page < $total_pages): ?>
-                    <li class="page-item"><a class="page-link nav-link-ajax" data-page="my-services" href="?page=my-services&spage=<?php echo $svc_page + 1; ?>">Next</a></li>
+                    <li class="page-item"><a class="page-link" href="#" onclick="svcGoPage(<?php echo $svc_page+1; ?>);return false;">Next</a></li>
                 <?php endif; ?>
             </ul></nav>
             <div class="text-center text-muted small">
@@ -157,6 +157,20 @@ $services = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 </div>
 
 <script>
+window.svcGoPage = function(p) {
+    const lang = '<?php echo $lang ?? "en"; ?>';
+    const params = 'page=my-services&lang=' + lang + '&spage=' + p;
+    history.pushState({page:'my-services',extra:{}}, '', 'index.php?' + params);
+    const mc = document.getElementById('mainContent');
+    mc.innerHTML = '<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i></div>';
+    fetch('index.php?' + params, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(r=>r.text()).then(html=>{
+            mc.innerHTML = html;
+            mc.querySelectorAll('script').forEach(s=>{const ns=document.createElement('script');ns.textContent=s.textContent;document.body.appendChild(ns);});
+            if(typeof bindAjaxLinks==='function') bindAjaxLinks();
+        });
+};
+
 document.querySelectorAll('.toggle-status-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const id      = btn.dataset.id;

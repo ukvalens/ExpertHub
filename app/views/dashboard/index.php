@@ -69,6 +69,33 @@ if ($user_type === 'customer') {
     $stats = $stmt->get_result()->fetch_assoc();
 }
 
+// Topbar badge counts (unread messages + unread notifications)
+$topbar_unread_msgs  = 0;
+$topbar_unread_notifs = 0;
+if ($user_type === 'customer') {
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM messages WHERE receiver_id=? AND is_read=0");
+    $stmt->bind_param("i", $user_id); $stmt->execute();
+    $topbar_unread_msgs = (int)$stmt->get_result()->fetch_row()[0];
+
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM orders WHERE customer_id=? AND status IN ('accepted','in_progress','completed','cancelled') AND updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
+    $stmt->bind_param("i", $user_id); $stmt->execute();
+    $topbar_unread_notifs = (int)$stmt->get_result()->fetch_row()[0];
+
+} elseif ($user_type === 'provider') {
+    $stmt = $conn->prepare("SELECT sp.id FROM service_providers sp WHERE sp.user_id=?");
+    $stmt->bind_param("i", $user_id); $stmt->execute();
+    $sp_row = $stmt->get_result()->fetch_assoc();
+    $sp_id  = $sp_row['id'] ?? 0;
+
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM messages WHERE receiver_id=? AND is_read=0");
+    $stmt->bind_param("i", $user_id); $stmt->execute();
+    $topbar_unread_msgs = (int)$stmt->get_result()->fetch_row()[0];
+
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM orders WHERE provider_id=? AND status IN ('requested','accepted','in_progress','completed','cancelled') AND updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
+    $stmt->bind_param("i", $sp_id); $stmt->execute();
+    $topbar_unread_notifs = (int)$stmt->get_result()->fetch_row()[0];
+}
+
 // Map page slugs to existing partial files
 $page_map = [
     // customer
@@ -84,6 +111,9 @@ $page_map = [
     'orders'           => '../customer/orders.php',
     'messages'         => '../customer/' . ($user_type === 'provider' ? '' : '') . 'messages.php',
     'devices'          => '../customer/devices.php',
+    'device-history'   => '../customer/device-history.php',
+    'request-service'  => '../customer/request-service.php',
+    'order'            => '../customer/order.php',
     'wallet'           => '../customer/wallet.php',
     'support'          => '../customer/support.php',
     'profile'          => '../' . $user_type . '/profile.php',
@@ -98,11 +128,40 @@ $page_map = [
     'quotes'           => '../provider/quotes.php',
     'negotiations'     => '../provider/negotiations.php',
     'earnings'         => '../provider/earnings.php',
+    'transactions'     => '../shared/transactions.php',
+    'invoices'         => '../shared/invoices.php',
+    'clients'          => '../shared/clients.php',
+    'client-management'=> '../provider/client-management.php',
     'provider-messages'=> '../provider/messages.php',
     'provider-support' => '../provider/support.php',
     // admin
     'manage-photos'    => '../admin/manage_about.php',
 ];
+
+// Badge counts endpoint
+if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && ($_GET['action'] ?? '') === 'badge_counts') {
+    $msgs = $notifs = 0;
+    if ($user_type === 'customer') {
+        $s = $conn->prepare("SELECT COUNT(*) FROM messages WHERE receiver_id=? AND is_read=0");
+        $s->bind_param("i", $user_id); $s->execute();
+        $msgs = (int)$s->get_result()->fetch_row()[0];
+        $s = $conn->prepare("SELECT COUNT(*) FROM orders WHERE customer_id=? AND status IN ('accepted','in_progress','completed','cancelled') AND updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
+        $s->bind_param("i", $user_id); $s->execute();
+        $notifs = (int)$s->get_result()->fetch_row()[0];
+    } elseif ($user_type === 'provider') {
+        $s = $conn->prepare("SELECT sp.id FROM service_providers sp WHERE sp.user_id=?");
+        $s->bind_param("i", $user_id); $s->execute();
+        $sp_id = (int)($s->get_result()->fetch_assoc()['id'] ?? 0);
+        $s = $conn->prepare("SELECT COUNT(*) FROM messages WHERE receiver_id=? AND is_read=0");
+        $s->bind_param("i", $user_id); $s->execute();
+        $msgs = (int)$s->get_result()->fetch_row()[0];
+        $s = $conn->prepare("SELECT COUNT(*) FROM orders WHERE provider_id=? AND status IN ('requested','accepted','in_progress','completed','cancelled') AND updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
+        $s->bind_param("i", $sp_id); $s->execute();
+        $notifs = (int)$s->get_result()->fetch_row()[0];
+    }
+    header('Content-Type: application/json');
+    echo json_encode(['msgs' => $msgs, 'notifs' => $notifs]); exit;
+}
 
 // If AJAX request, return only the content partial
 if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
@@ -141,10 +200,33 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <button class="hamburger" id="sidebarToggle"><i class="fas fa-bars"></i></button>
             <a href="../../../index.php" class="brand"><i class="fas fa-users-cog me-2"></i>ExpertHub</a>
         </div>
-        <span class="description">
-            Welcome back, <?php echo $user['first_name']; ?>! 👋
+        <span class="description d-none d-md-inline">
+            Welcome back, <?php echo htmlspecialchars($user['first_name']); ?>! 👋
         </span>
-        <div class="profile-area dropdown">
+
+        <div class="profile-area dropdown d-flex align-items-center gap-3">
+
+            <!-- Messages -->
+            <?php $msg_page = $user_type === 'provider' ? 'provider-messages' : 'messages'; ?>
+            <button class="btn p-0 position-relative topbar-icon-btn" data-page="<?php echo $msg_page; ?>"
+                    title="Messages" style="background:none;border:none;">
+                <i class="fas fa-comment-dots text-white" style="font-size:1.15rem;"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger<?php echo $topbar_unread_msgs > 0 ? '' : ' d-none'; ?>"
+                      id="msgBadge" style="font-size:.6rem;padding:2px 5px;">
+                    <?php echo $topbar_unread_msgs > 99 ? '99+' : $topbar_unread_msgs; ?>
+                </span>
+            </button>
+
+            <!-- Notifications -->
+            <button class="btn p-0 position-relative topbar-icon-btn" data-page="notifications"
+                    title="Notifications" style="background:none;border:none;">
+                <i class="fas fa-bell text-white" style="font-size:1.15rem;"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark<?php echo $topbar_unread_notifs > 0 ? '' : ' d-none'; ?>"
+                      id="notifBadge" style="font-size:.6rem;padding:2px 5px;">
+                    <?php echo $topbar_unread_notifs > 99 ? '99+' : $topbar_unread_notifs; ?>
+                </span>
+            </button>
+
             <button class="btn p-0 border-0 d-flex align-items-center gap-2" data-bs-toggle="dropdown">
                 <?php if (!empty($user['profile_image'])): ?>
                     <img src="../../../<?php echo $user['profile_image']; ?>" alt="Profile">
@@ -156,9 +238,11 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
                 <?php if ($user_type === 'customer'): ?>
-                    <li><a class="dropdown-item" href="../customer/profile.php?lang=<?php echo $lang; ?>"><i class="fas fa-user me-2"></i>My Profile</a></li>
+                    <li><a class="dropdown-item nav-link-ajax" data-page="profile" href="#"><i class="fas fa-user me-2"></i>My Profile</a></li>
                 <?php elseif ($user_type === 'provider'): ?>
-                    <li><a class="dropdown-item" href="../provider/profile.php?lang=<?php echo $lang; ?>"><i class="fas fa-user-tie me-2"></i>My Profile</a></li>
+                    <li><a class="dropdown-item nav-link-ajax" data-page="profile" href="#"><i class="fas fa-user-tie me-2"></i>My Profile</a></li>
+                <?php elseif ($user_type === 'admin'): ?>
+                    <li><a class="dropdown-item nav-link-ajax" data-page="profile" href="#"><i class="fas fa-user-shield me-2"></i>My Profile</a></li>
                 <?php endif; ?>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item text-danger" href="../../../logout.php"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
@@ -198,13 +282,13 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <a href="#" data-page="documents"><i class="fas fa-file-alt"></i>My Documents</a>
             <a href="#" data-page="shared-files"><i class="fas fa-share-alt"></i>Shared Files</a>
             <a href="#" data-page="customer-templates"><i class="fas fa-copy"></i>Templates</a>
-            <a href="../customer/devices.php?lang=<?php echo $lang; ?>"><i class="fas fa-laptop"></i>My Devices</a>
+            <a href="#" data-page="devices"><i class="fas fa-laptop"></i>My Devices</a>
 
             <div class="section-label">💰 Payments</div>
-            <a href="../customer/wallet.php?lang=<?php echo $lang; ?>"><i class="fas fa-wallet"></i>My Wallet</a>
+            <a href="#" data-page="wallet"><i class="fas fa-wallet"></i>My Wallet</a>
             <a href="../customer/payment-methods.php?lang=<?php echo $lang; ?>"><i class="fas fa-credit-card"></i>Payment Methods</a>
-            <a href="../customer/transactions.php?lang=<?php echo $lang; ?>"><i class="fas fa-exchange-alt"></i>Transactions</a>
-            <a href="../customer/invoices.php?lang=<?php echo $lang; ?>"><i class="fas fa-file-invoice"></i>Invoices</a>
+            <a href="#" data-page="transactions"><i class="fas fa-exchange-alt"></i>Transactions</a>
+            <a href="#" data-page="invoices"><i class="fas fa-file-invoice"></i>Invoices</a>
             <a href="../customer/refunds.php?lang=<?php echo $lang; ?>"><i class="fas fa-undo"></i>Refunds</a>
 
             <div class="section-label">🆘 Support</div>
@@ -249,15 +333,15 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <a href="../provider/file-manager.php?lang=<?php echo $lang; ?>"><i class="fas fa-folder-open"></i>File Manager</a>
 
             <div class="section-label">💰 Earnings</div>
-            <a href="../provider/earnings.php?lang=<?php echo $lang; ?>"><i class="fas fa-dollar-sign"></i>Earnings Dashboard</a>
-            <a href="../provider/transactions.php?lang=<?php echo $lang; ?>"><i class="fas fa-exchange-alt"></i>Transactions</a>
+            <a href="#" data-page="earnings"><i class="fas fa-dollar-sign"></i>Earnings Dashboard</a>
+            <a href="#" data-page="transactions"><i class="fas fa-exchange-alt"></i>Transactions</a>
             <a href="../provider/withdraw.php?lang=<?php echo $lang; ?>"><i class="fas fa-money-bill-wave"></i>Withdraw Funds</a>
-            <a href="../provider/invoices.php?lang=<?php echo $lang; ?>"><i class="fas fa-file-invoice"></i>Invoices</a>
+            <a href="#" data-page="invoices"><i class="fas fa-file-invoice"></i>Invoices</a>
             <a href="../provider/quotes.php?lang=<?php echo $lang; ?>"><i class="fas fa-file-invoice-dollar"></i>Quotes</a>
 
             <div class="section-label">👥 Clients</div>
-            <a href="../provider/clients.php?lang=<?php echo $lang; ?>"><i class="fas fa-users"></i>My Clients</a>
-            <a href="../provider/client-management.php?lang=<?php echo $lang; ?>"><i class="fas fa-user-cog"></i>Client Management</a>
+            <a href="#" data-page="clients"><i class="fas fa-users"></i>My Clients</a>
+            <a href="#" data-page="client-management"><i class="fas fa-user-cog"></i>Client Management</a>
 
 
             <div class="section-label">📢 Growth</div>
@@ -298,7 +382,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <a href="../admin/refunds.php"><i class="fas fa-undo"></i>Refund Requests</a>
 
             <div class="section-label">💰 Finance</div>
-            <a href="../admin/transactions.php"><i class="fas fa-exchange-alt"></i>Transactions</a>
+            <a href="#" data-page="transactions"><i class="fas fa-exchange-alt"></i>Transactions</a>
             <a href="../admin/commissions.php"><i class="fas fa-percentage"></i>Commissions</a>
             <a href="../admin/payouts.php"><i class="fas fa-money-bill-wave"></i>Payouts</a>
             <a href="../admin/revenue.php"><i class="fas fa-chart-line"></i>Revenue Reports</a>
@@ -383,7 +467,10 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             mainContent.innerHTML = '<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i></div>';
 
             let params = 'page=' + page + '&lang=<?php echo $lang; ?>';
-            if (extra.status) params += '&status=' + extra.status;
+            if (extra.status)     params += '&status='     + extra.status;
+            if (extra.device_id)  params += '&device_id='  + extra.device_id;
+            if (extra.order_id)   params += '&order_id='   + extra.order_id;
+            if (extra.service_id) params += '&service_id=' + extra.service_id;
 
             fetch('index.php?' + params, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -434,6 +521,27 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
 
         // Bind quick action links inside content
         bindAjaxLinks();
+
+        // Topbar icon buttons (messages / notifications)
+        document.querySelectorAll('.topbar-icon-btn[data-page]').forEach(btn => {
+            btn.addEventListener('click', () => loadPage(btn.dataset.page));
+        });
+
+        // Poll badge counts every 30s
+        function refreshBadges() {
+            fetch('index.php?action=badge_counts&lang=<?php echo $lang; ?>', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(d => {
+                const mb = document.getElementById('msgBadge');
+                const nb = document.getElementById('notifBadge');
+                if (mb) { mb.textContent = d.msgs > 99 ? '99+' : d.msgs; mb.classList.toggle('d-none', d.msgs === 0); }
+                if (nb) { nb.textContent = d.notifs > 99 ? '99+' : d.notifs; nb.classList.toggle('d-none', d.notifs === 0); }
+            })
+            .catch(() => {});
+        }
+        setInterval(refreshBadges, 30000);
 
         // Handle browser back/forward
         window.addEventListener('popstate', e => {

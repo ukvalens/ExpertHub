@@ -6,7 +6,7 @@ if (!isset($conn)) {
     header("Location: ../dashboard/index.php?page=profile&lang=$lang"); exit;
 }
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'customer') {
+if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
     header("Location: ../../../login.php"); exit;
 }
 
@@ -15,12 +15,10 @@ $lang    = $_GET['lang'] ?? 'en';
 $success = $error = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $first_name          = trim($_POST['first_name'] ?? '');
-    $last_name           = trim($_POST['last_name']  ?? '');
-    $phone               = trim($_POST['phone']       ?? '');
-    $country             = trim($_POST['country']     ?? '');
-    $timezone            = $_POST['timezone']            ?? 'UTC';
-    $language_preference = $_POST['language_preference'] ?? 'en';
+    $first_name = trim($_POST['first_name'] ?? '');
+    $last_name  = trim($_POST['last_name']  ?? '');
+    $phone      = trim($_POST['phone']      ?? '');
+    $country    = trim($_POST['country']    ?? '');
 
     $profile_image = null;
     if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === 0) {
@@ -32,15 +30,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($profile_image) {
-        $stmt = $conn->prepare("UPDATE users SET first_name=?, last_name=?, phone=?, country=?, timezone=?, language_preference=?, profile_image=? WHERE id=?");
-        $stmt->bind_param("sssssssi", $first_name, $last_name, $phone, $country, $timezone, $language_preference, $profile_image, $user_id);
+        $stmt = $conn->prepare("UPDATE users SET first_name=?, last_name=?, phone=?, country=?, profile_image=? WHERE id=?");
+        $stmt->bind_param("sssssi", $first_name, $last_name, $phone, $country, $profile_image, $user_id);
     } else {
-        $stmt = $conn->prepare("UPDATE users SET first_name=?, last_name=?, phone=?, country=?, timezone=?, language_preference=? WHERE id=?");
-        $stmt->bind_param("ssssssi", $first_name, $last_name, $phone, $country, $timezone, $language_preference, $user_id);
+        $stmt = $conn->prepare("UPDATE users SET first_name=?, last_name=?, phone=?, country=? WHERE id=?");
+        $stmt->bind_param("ssssi", $first_name, $last_name, $phone, $country, $user_id);
     }
     $success = $stmt->execute() ? "Profile updated successfully!" : "Failed to update profile.";
 
-    // Refresh
     $stmt = $conn->prepare("SELECT * FROM users WHERE id=?");
     $stmt->bind_param("i", $user_id); $stmt->execute();
     $user = $stmt->get_result()->fetch_assoc();
@@ -52,23 +49,21 @@ if (!isset($user)) {
     $user = $stmt->get_result()->fetch_assoc();
 }
 
-// Stats
+// Platform stats
 $stmt = $conn->prepare("SELECT
-    COUNT(*)                                                          as total_orders,
-    COUNT(CASE WHEN status='completed' THEN 1 END)                   as completed_orders,
-    COUNT(CASE WHEN status IN ('accepted','in_progress') THEN 1 END) as active_orders,
-    COALESCE(SUM(CASE WHEN status='completed' THEN final_price END),0) as total_spent
-    FROM orders WHERE customer_id=?");
-$stmt->bind_param("i", $user_id); $stmt->execute();
-$stats = $stmt->get_result()->fetch_assoc();
-
-$timezones = ['UTC'=>'UTC','Africa/Kigali'=>'Africa/Kigali (CAT)','Africa/Nairobi'=>'Africa/Nairobi (EAT)','America/New_York'=>'America/New_York (EST)','America/Los_Angeles'=>'America/Los_Angeles (PST)','Europe/London'=>'Europe/London (GMT)','Europe/Paris'=>'Europe/Paris (CET)','Asia/Dubai'=>'Asia/Dubai (GST)','Asia/Kolkata'=>'Asia/Kolkata (IST)'];
-$languages = ['en'=>'English','fr'=>'French','rw'=>'Kinyarwanda','sw'=>'Swahili'];
+    (SELECT COUNT(*) FROM users WHERE user_type='customer' AND status='active')  as customers,
+    (SELECT COUNT(*) FROM users WHERE user_type='provider' AND status='active')  as providers,
+    (SELECT COUNT(*) FROM orders WHERE status IN ('accepted','in_progress'))      as active_orders,
+    (SELECT COUNT(*) FROM orders WHERE status='completed')                        as completed_orders,
+    (SELECT COALESCE(SUM(amount),0) FROM payments WHERE payment_status='completed') as total_revenue,
+    (SELECT COUNT(*) FROM provider_services WHERE status='active')               as active_services");
+$stmt->execute();
+$pstats = $stmt->get_result()->fetch_assoc();
 ?>
 
 <div class="content-card">
     <div class="card-header">
-        <i class="fas fa-user me-2" style="color:var(--accent-color)"></i>My Profile
+        <i class="fas fa-user-shield me-2" style="color:var(--accent-color)"></i>Admin Profile
     </div>
     <div class="card-body p-4">
 
@@ -90,7 +85,7 @@ $languages = ['en'=>'English','fr'=>'French','rw'=>'Kinyarwanda','sw'=>'Swahili'
                 <img src="../../../<?php echo htmlspecialchars($user['profile_image']); ?>"
                      class="rounded-circle flex-shrink-0" style="width:72px;height:72px;object-fit:cover;">
             <?php else: ?>
-                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center flex-shrink-0"
+                <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center flex-shrink-0"
                      style="width:72px;height:72px;font-size:1.4rem;">
                     <?php echo strtoupper(substr($user['first_name'],0,1).substr($user['last_name'],0,1)); ?>
                 </div>
@@ -98,34 +93,51 @@ $languages = ['en'=>'English','fr'=>'French','rw'=>'Kinyarwanda','sw'=>'Swahili'
             <div>
                 <h5 class="mb-0"><?php echo htmlspecialchars($user['first_name'].' '.$user['last_name']); ?></h5>
                 <small class="text-muted"><?php echo htmlspecialchars($user['email']); ?></small><br>
-                <span class="badge bg-success mt-1"><i class="fas fa-user me-1"></i>Customer</span>
-                <?php if ($user['email_verified']): ?>
-                    <span class="badge bg-primary ms-1"><i class="fas fa-check-circle me-1"></i>Verified</span>
-                <?php endif; ?>
+                <span class="badge bg-danger mt-1"><i class="fas fa-user-shield me-1"></i>Administrator</span>
             </div>
             <div class="ms-auto d-none d-md-flex gap-4 text-center">
                 <div>
-                    <div class="fw-bold text-primary"><?php echo (int)$stats['total_orders']; ?></div>
-                    <small class="text-muted">Orders</small>
+                    <div class="fw-bold text-primary"><?php echo number_format($pstats['customers']); ?></div>
+                    <small class="text-muted">Customers</small>
                 </div>
                 <div>
-                    <div class="fw-bold text-success"><?php echo (int)$stats['completed_orders']; ?></div>
-                    <small class="text-muted">Completed</small>
+                    <div class="fw-bold text-info"><?php echo number_format($pstats['providers']); ?></div>
+                    <small class="text-muted">Providers</small>
                 </div>
                 <div>
-                    <div class="fw-bold text-warning"><?php echo (int)$stats['active_orders']; ?></div>
-                    <small class="text-muted">Active</small>
+                    <div class="fw-bold text-warning"><?php echo number_format($pstats['active_orders']); ?></div>
+                    <small class="text-muted">Active Orders</small>
                 </div>
                 <div>
-                    <div class="fw-bold text-success">$<?php echo number_format($stats['total_spent'],2); ?></div>
-                    <small class="text-muted">Spent</small>
+                    <div class="fw-bold text-success">$<?php echo number_format($pstats['total_revenue'],0); ?></div>
+                    <small class="text-muted">Revenue</small>
                 </div>
             </div>
         </div>
 
+        <!-- Platform stats row -->
+        <div class="row g-3 mb-4">
+            <?php
+            $tiles = [
+                ['label'=>'Active Services',    'value'=>number_format($pstats['active_services']),    'icon'=>'fa-briefcase',    'color'=>'primary'],
+                ['label'=>'Completed Orders',   'value'=>number_format($pstats['completed_orders']),   'icon'=>'fa-check-circle', 'color'=>'success'],
+                ['label'=>'Active Orders',      'value'=>number_format($pstats['active_orders']),      'icon'=>'fa-spinner',      'color'=>'warning'],
+                ['label'=>'Total Revenue',      'value'=>'$'.number_format($pstats['total_revenue'],0),'icon'=>'fa-dollar-sign',  'color'=>'success'],
+            ];
+            foreach ($tiles as $t): ?>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded text-center" style="background:var(--light-bg)">
+                    <i class="fas <?php echo $t['icon']; ?> text-<?php echo $t['color']; ?> mb-1"></i>
+                    <div class="fw-bold text-<?php echo $t['color']; ?>"><?php echo $t['value']; ?></div>
+                    <small class="text-muted"><?php echo $t['label']; ?></small>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+
         <form method="POST" enctype="multipart/form-data">
 
-            <h6 class="fw-semibold mb-3">Personal Information</h6>
+            <h6 class="fw-semibold mb-3">Account Information</h6>
             <div class="row g-3 mb-3">
                 <div class="col-md-6">
                     <label class="form-label">First Name</label>
@@ -162,33 +174,8 @@ $languages = ['en'=>'English','fr'=>'French','rw'=>'Kinyarwanda','sw'=>'Swahili'
                 </div>
             </div>
 
-            <hr class="my-3">
-            <h6 class="fw-semibold mb-3">Preferences</h6>
-            <div class="row g-3 mb-3">
-                <div class="col-md-6">
-                    <label class="form-label">Timezone</label>
-                    <select class="form-select form-select-sm" name="timezone">
-                        <?php foreach ($timezones as $val => $lbl): ?>
-                            <option value="<?php echo $val; ?>" <?php echo ($user['timezone'] ?? 'UTC') === $val ? 'selected' : ''; ?>>
-                                <?php echo $lbl; ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Language</label>
-                    <select class="form-select form-select-sm" name="language_preference">
-                        <?php foreach ($languages as $val => $lbl): ?>
-                            <option value="<?php echo $val; ?>" <?php echo ($user['language_preference'] ?? 'en') === $val ? 'selected' : ''; ?>>
-                                <?php echo $lbl; ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-            </div>
-
             <div class="d-flex justify-content-end mt-2">
-                <button type="submit" class="btn btn-primary btn-sm">
+                <button type="submit" class="btn btn-danger btn-sm">
                     <i class="fas fa-save me-1"></i>Save Changes
                 </button>
             </div>

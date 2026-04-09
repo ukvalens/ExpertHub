@@ -6,7 +6,7 @@
     <title>ExpertHub - Online Service Marketplace</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css?v=13" rel="stylesheet">
+    <link href="assets/css/style.css?v=16" rel="stylesheet">
 
 </head>
 <body>
@@ -41,9 +41,10 @@
 
     <!-- Hero Section -->
     <section id="home" class="hero-section">
+        <?php require_once 'config/database.php'; ?>
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-lg-7">
+                <div class="col-lg-6">
                     <h1 class="fw-bold mb-2" style="font-size:2rem;">Find Expert Services for Any Task</h1>
                     <p class="mb-3">Connect with verified professionals for web development, design, writing, consulting, and more.</p>
                     <div class="row g-2 mb-3">
@@ -62,6 +63,27 @@
                         <span class="badge bg-light text-dark">Digital Marketing</span>
                         <span class="badge bg-light text-dark">Content Writing</span>
                     </div>
+                </div>
+                <div class="col-lg-6">
+                    <?php
+                    $service_photos = $conn->query("SELECT * FROM about_photos WHERE type = 'service' ORDER BY created_at DESC")->fetch_all(MYSQLI_ASSOC);
+                    if (!empty($service_photos)): ?>
+                        <div id="homeServiceCarousel" class="carousel slide" data-bs-ride="carousel">
+                            <div class="carousel-inner">
+                                <?php foreach ($service_photos as $i => $photo): ?>
+                                    <div class="carousel-item <?php echo $i === 0 ? 'active' : ''; ?>">
+                                        <img src="/ExpertHUB/uploads/about/<?php echo $photo['photo_path']; ?>" alt="Service" class="home-service-img">
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <button class="carousel-control-prev" type="button" data-bs-target="#homeServiceCarousel" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon"></span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#homeServiceCarousel" data-bs-slide="next">
+                                <span class="carousel-control-next-icon"></span>
+                            </button>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -176,7 +198,6 @@
             </div>
             
             <?php
-            require_once 'config/database.php';
             $owner_photos = $conn->query("SELECT * FROM about_photos WHERE type = 'owner' ORDER BY created_at DESC")->fetch_all(MYSQLI_ASSOC);
             $service_photos = $conn->query("SELECT * FROM about_photos WHERE type = 'service' ORDER BY created_at DESC")->fetch_all(MYSQLI_ASSOC);
             ?>
@@ -255,8 +276,10 @@
         setInterval(() => {
             const owner = document.getElementById('ownerCarousel');
             const service = document.getElementById('serviceCarousel');
+            const homeService = document.getElementById('homeServiceCarousel');
             if (owner) bootstrap.Carousel.getOrCreateInstance(owner).next();
             if (service) bootstrap.Carousel.getOrCreateInstance(service).next();
+            if (homeService) bootstrap.Carousel.getOrCreateInstance(homeService).next();
         }, 3000);
     </script>
 </body>

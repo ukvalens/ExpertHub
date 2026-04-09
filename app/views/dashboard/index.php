@@ -80,6 +80,7 @@ $page_map = [
     'notifications'    => '../customer/notifications.php',
     'documents'        => '../customer/documents.php',
     'shared-files'     => '../customer/shared-files.php',
+    'customer-templates'=> '../customer/templates.php',
     'orders'           => '../customer/orders.php',
     'messages'         => '../customer/' . ($user_type === 'provider' ? '' : '') . 'messages.php',
     'devices'          => '../customer/devices.php',
@@ -196,7 +197,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <div class="section-label">📁 Documents &amp; Devices</div>
             <a href="#" data-page="documents"><i class="fas fa-file-alt"></i>My Documents</a>
             <a href="#" data-page="shared-files"><i class="fas fa-share-alt"></i>Shared Files</a>
-            <a href="../customer/templates.php?lang=<?php echo $lang; ?>"><i class="fas fa-copy"></i>Templates</a>
+            <a href="#" data-page="customer-templates"><i class="fas fa-copy"></i>Templates</a>
             <a href="../customer/devices.php?lang=<?php echo $lang; ?>"><i class="fas fa-laptop"></i>My Devices</a>
 
             <div class="section-label">💰 Payments</div>

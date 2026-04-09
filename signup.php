@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <title>Sign Up - ExpertHub</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css?v=14" rel="stylesheet">
+    <link href="assets/css/style.css?v=15" rel="stylesheet">
 </head>
 <body class="auth-body">
     <div class="container">
@@ -98,12 +98,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
             <div class="col-lg-6">
                 <div class="auth-card mx-auto" style="max-width: 500px;">
-                    <div class="auth-header">
-                        <h3><i class="fas fa-users-cog me-2"></i>ExpertHub</h3>
-                        <p class="mb-0">Create Your Account</p>
-                        <small class="d-block mt-2 opacity-75">Join thousands of satisfied customers and expert providers</small>
+                    <div class="auth-header py-2">
+                        <h5><i class="fas fa-users-cog me-2"></i>ExpertHub</h5>
+                        <p class="mb-0 small">Create Your Account</p>
                     </div>
-                    <div class="p-4">
+                    <div class="p-3">
                         <?php if (isset($error)): ?>
                             <div class="alert alert-danger"><?php echo $error; ?></div>
                         <?php endif; ?>
@@ -117,55 +116,51 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         
                         <form method="POST">
                             <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">First Name</label>
-                                    <input type="text" class="form-control" name="first_name" required>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label small mb-1">First Name</label>
+                                    <input type="text" class="form-control form-control-sm" name="first_name" required>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Last Name</label>
-                                    <input type="text" class="form-control" name="last_name" required>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label small mb-1">Last Name</label>
+                                    <input type="text" class="form-control form-control-sm" name="last_name" required>
                                 </div>
                             </div>
                             
-                            <div class="mb-3">
-                                <label class="form-label">Email Address</label>
-                                <input type="email" class="form-control" name="email" required>
+                            <div class="mb-2">
+                                <label class="form-label small mb-1">Email Address</label>
+                                <input type="email" class="form-control form-control-sm" name="email" required>
                             </div>
                             
-                            <div class="mb-3">
-                                <label class="form-label">Password</label>
-                                <input type="password" class="form-control" name="password" required minlength="6">
+                            <div class="mb-2">
+                                <label class="form-label small mb-1">Password</label>
+                                <input type="password" class="form-control form-control-sm" name="password" required minlength="6">
                             </div>
                             
                             <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Phone Number</label>
-                                    <input type="tel" class="form-control" name="phone">
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label small mb-1">Phone Number</label>
+                                    <input type="tel" class="form-control form-control-sm" name="phone">
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Country</label>
-                                    <input type="text" class="form-control" name="country">
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label small mb-1">Country</label>
+                                    <input type="text" class="form-control form-control-sm" name="country">
                                 </div>
                             </div>
                             
-                            <div class="mb-4">
-                                <label class="form-label">I want to:</label>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="user_type" value="customer" id="customer" checked>
-                                            <label class="form-check-label" for="customer">
-                                                <i class="fas fa-shopping-cart me-2"></i>Buy Services
-                                            </label>
-                                        </div>
+                            <div class="mb-2">
+                                <label class="form-label small mb-1">I want to:</label>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="user_type" value="customer" id="customer" checked>
+                                        <label class="form-check-label small" for="customer">
+                                            <i class="fas fa-shopping-cart me-1"></i>Buy Services
+                                        </label>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="user_type" value="provider" id="provider">
-                                            <label class="form-check-label" for="provider">
-                                                <i class="fas fa-briefcase me-2"></i>Sell Services
-                                            </label>
-                                        </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="user_type" value="provider" id="provider">
+                                        <label class="form-check-label small" for="provider">
+                                            <i class="fas fa-briefcase me-1"></i>Sell Services
+                                        </label>
                                     </div>
                                 </div>
                             </div>

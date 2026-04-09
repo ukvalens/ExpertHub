@@ -33,6 +33,7 @@ body.auth-body {
     align-items: center;
     padding-top: 20px;
     padding-bottom: 20px;
+    overflow: hidden;
 }
 
 .auth-card {
@@ -184,6 +185,65 @@ section {
 
 footer {
     margin-top: auto;
+}
+
+/* Compact form styles */
+.auth-card .auth-header {
+    padding: 0.75rem 1.5rem;
+}
+
+.auth-card .auth-header h3,
+.auth-card .auth-header h5 {
+    font-size: 1.1rem;
+    margin-bottom: 0.2rem;
+}
+
+.auth-card .auth-header p,
+.auth-card .auth-header small {
+    font-size: 0.8rem;
+}
+
+.auth-card .p-4 {
+    padding: 0.75rem !important;
+}
+
+.auth-card .form-label {
+    font-size: 0.8rem;
+    margin-bottom: 2px;
+}
+
+.auth-card .form-control,
+.auth-card .form-select {
+    padding: 4px 10px;
+    font-size: 0.85rem;
+    border-radius: 8px;
+}
+
+.auth-card .mb-3 {
+    margin-bottom: 0.35rem !important;
+}
+
+.auth-card .mb-4 {
+    margin-bottom: 0.4rem !important;
+}
+
+.auth-card textarea.form-control {
+    min-height: 55px;
+    max-height: 70px;
+}
+
+.auth-card h5 {
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem !important;
+}
+
+.auth-card hr {
+    margin: 0.4rem 0 !important;
+}
+
+.container.py-4 {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
 }
 
 @media (max-width: 768px) {

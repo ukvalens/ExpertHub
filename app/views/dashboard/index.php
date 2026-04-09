@@ -402,7 +402,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <div class="section-label">📚 Content</div>
             <a href="../admin/knowledge-base.php"><i class="fas fa-book"></i>Knowledge Base</a>
             <a href="../admin/faqs.php"><i class="fas fa-question-circle"></i>FAQs</a>
-            <a href="../admin/manage_about.php"><i class="fas fa-images"></i>Manage Photos</a>
+            <a href="#" data-page="manage-photos"><i class="fas fa-images"></i>Manage Photos</a>
 
             <div class="section-label">⚙️ System</div>
             <a href="../admin/platform-settings.php"><i class="fas fa-cogs"></i>Platform Settings</a>

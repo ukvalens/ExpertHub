@@ -1,6 +1,6 @@
 <!-- Footer -->
 <footer class="bg-dark text-light py-3 mt-3">
-    <div class="container">
+    <div class="container-fluid px-4">
         <div class="row g-2">
             <div class="col-lg-4 col-md-6 mb-2">
                 <h6 class="mb-1"><i class="fas fa-users-cog me-1"></i>ExpertHub</h6>

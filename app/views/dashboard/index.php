@@ -11,14 +11,12 @@ $user_type = $_SESSION['user_type'];
 $user_id = $_SESSION['user_id'];
 $lang = $_GET['lang'] ?? 'en';
 
-// Get user info based on user type
 if ($user_type === 'customer') {
     $stmt = $conn->prepare("SELECT u.* FROM users u WHERE u.id = ?");
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $user = $stmt->get_result()->fetch_assoc();
-    
-    // Get customer stats
+
     $stmt = $conn->prepare("SELECT 
         COUNT(CASE WHEN status IN ('accepted', 'in_progress') THEN 1 END) as active_orders,
         COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_orders,
@@ -27,23 +25,20 @@ if ($user_type === 'customer') {
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $stats = $stmt->get_result()->fetch_assoc();
-    
-    // Get saved items count (assuming a saved_services table exists)
+
     $stmt = $conn->prepare("SELECT COUNT(*) as saved_count FROM cart_items ci 
                            JOIN shopping_carts sc ON ci.cart_id = sc.id 
                            WHERE sc.customer_id = ? AND sc.status = 'active'");
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
-    $saved_result = $stmt->get_result()->fetch_assoc();
-    $stats['saved_items'] = $saved_result['saved_count'];
-    
+    $stats['saved_items'] = $stmt->get_result()->fetch_assoc()['saved_count'];
+
 } elseif ($user_type === 'provider') {
     $stmt = $conn->prepare("SELECT u.*, sp.* FROM users u LEFT JOIN service_providers sp ON u.id = sp.user_id WHERE u.id = ?");
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $user = $stmt->get_result()->fetch_assoc();
-    
-    // Get provider stats
+
     $stmt = $conn->prepare("SELECT 
         (SELECT COUNT(*) FROM orders WHERE provider_id = sp.id AND status IN ('accepted', 'in_progress')) as active_orders,
         (SELECT COUNT(*) FROM orders WHERE provider_id = sp.id AND status = 'completed') as completed_orders,
@@ -54,22 +49,16 @@ if ($user_type === 'customer') {
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $stats = $stmt->get_result()->fetch_assoc();
-    
-    // Format average response time
+
     $avg_minutes = $stats['avg_response_minutes'] ?? 0;
-    if ($avg_minutes < 60) {
-        $stats['avg_response_time'] = round($avg_minutes) . 'm';
-    } else {
-        $stats['avg_response_time'] = round($avg_minutes / 60, 1) . 'h';
-    }
-    
+    $stats['avg_response_time'] = $avg_minutes < 60 ? round($avg_minutes) . 'm' : round($avg_minutes / 60, 1) . 'h';
+
 } elseif ($user_type === 'admin') {
     $stmt = $conn->prepare("SELECT u.* FROM users u WHERE u.id = ?");
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $user = $stmt->get_result()->fetch_assoc();
-    
-    // Get admin stats
+
     $stmt = $conn->prepare("SELECT 
         (SELECT COUNT(*) FROM users WHERE status = 'active') as total_users,
         (SELECT COUNT(*) FROM provider_services WHERE status = 'active') as total_services,
@@ -89,560 +78,560 @@ if ($user_type === 'customer') {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
+            --primary: #0077B6;
+            --secondary: #023E8A;
+            --accent: #00BFA6;
+            --bg: #F8F9FA;
+            --sidebar-w: 240px;
             --primary-color: #0077B6;
             --secondary-color: #023E8A;
             --accent-color: #00BFA6;
-            --background-color: #E6F2F1;
-            --text-primary: #2D2D2D;
-            --text-secondary: #6C757D;
-            --error-color: #E63946;
+            --background-color: #F8F9FA;
+            --light-bg: #E6F2F1;
+            --text-color: #2D2D2D;
+            --text-muted: #6C757D;
             --success-color: #2A9D8F;
-            --info-color: #0077B6;
+            --error-color: #E63946;
+            --white: #FFFFFF;
         }
-        
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            background: linear-gradient(135deg, var(--background-color) 0%, #E6F2F1 50%, var(--background-color) 100%);
-            color: var(--text-primary);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding-top: 76px;
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            display: grid;
+            grid-template-rows: 60px 1fr auto;
+            grid-template-columns: var(--sidebar-w) 1fr;
+            grid-template-areas:
+                "topbar topbar"
+                "sidebar main"
+                "footer footer";
         }
-        
-        .navbar {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
-            box-shadow: 0 2px 10px rgba(0, 119, 182, 0.2);
-            position: fixed;
+
+        /* TOPBAR */
+        .topbar {
+            grid-area: topbar;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            position: sticky;
             top: 0;
-            width: 100%;
-            z-index: 1030;
         }
-        
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0, 119, 182, 0.1);
-            background: white;
-            transition: all 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 15px 40px rgba(0, 119, 182, 0.15);
-        }
-        
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        
-        .btn-primary:hover {
-            background-color: var(--secondary-color);
-            border-color: var(--secondary-color);
-        }
-        
-        .btn-success {
-            background-color: var(--success-color);
-            border-color: var(--success-color);
-        }
-        
-        .btn-success:hover {
-            background-color: #1f7a6b;
-            border-color: #1f7a6b;
-        }
-        
-        .btn-accent {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
+
+        .topbar .brand {
             color: white;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-decoration: none;
         }
-        
-        .btn-accent:hover {
-            background-color: #00a693;
-            border-color: #00a693;
-            color: white;
+
+        .topbar .description {
+            color: rgba(255,255,255,0.85);
+            font-size: 0.85rem;
         }
-        
-        .text-accent { color: var(--accent-color) !important; }
-        .text-secondary-custom { color: var(--text-secondary) !important; }
-        
-        .service-card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0, 119, 182, 0.1);
-            transition: all 0.3s ease;
-            background: white;
-            cursor: pointer;
+
+        .topbar .profile-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        
-        .service-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 15px 40px rgba(0, 119, 182, 0.15);
-        }
-        
-        .service-icon {
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(135deg, #E6F2F1, var(--background-color));
-            color: var(--primary-color);
+
+        .topbar .profile-area img,
+        .topbar .profile-area .avatar {
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255,255,255,0.5);
+        }
+
+        .topbar .profile-area .avatar {
+            background: rgba(255,255,255,0.2);
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.8rem;
-            margin: 0 auto 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
         }
-        
-        .notification-badge {
-            background-color: var(--error-color);
-        }
-        
-        .search-bar {
-            border-radius: 25px;
-            border: 2px solid var(--accent-color);
-        }
-        
-        .search-bar:focus {
-            box-shadow: 0 0 0 0.2rem rgba(0, 191, 166, 0.25);
-        }
-        
-        .provider-stats {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+
+        .topbar .profile-area .name {
             color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
         }
-        
-        .admin-stats {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+
+        /* SIDEBAR */
+        .sidebar {
+            grid-area: sidebar;
+            background: linear-gradient(180deg, var(--secondary), var(--primary));
+            overflow-y: auto;
+            padding: 15px 0;
+            position: sticky;
+            top: 60px;
+            height: calc(100vh - 60px);
+            align-self: start;
+        }
+
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px 18px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 0.82rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            background: rgba(255,255,255,0.15);
             color: white;
+            border-left: 3px solid var(--accent);
+            padding-left: 15px;
+        }
+
+        .sidebar a i {
+            width: 16px;
+            text-align: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .sidebar .section-label {
+            color: rgba(255,255,255,0.45);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            padding: 12px 18px 3px;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        /* MAIN CONTENT */
+        .main-wrapper {
+            grid-area: main;
+        }
+
+        .main-content {
+            padding: 20px;
+        }
+
+        /* STAT CARDS */
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,119,182,0.08);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover { transform: translateY(-4px); }
+
+        .stat-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #E6F2F1, #F0F4F8);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            margin: 0 auto 8px;
+        }
+
+        .stat-card h5 {
+            color: var(--primary);
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .stat-card p {
+            color: #6C757D;
+            font-size: 0.78rem;
+            margin: 0;
+        }
+
+        /* CONTENT CARDS */
+        .content-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,119,182,0.08);
+            overflow: hidden;
+        }
+
+        .content-card .card-header {
+            background: white;
+            border-bottom: 1px solid #f0f0f0;
+            padding: 12px 15px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .content-card .card-body { padding: 15px; }
+
+        /* FOOTER */
+        footer {
+            grid-area: footer;
+            padding-left: var(--sidebar-w);
+        }
+
+        @media (max-width: 768px) {
+            footer { padding-left: 0; }
+        }
+
+        /* HAMBURGER */
+        .hamburger { display: none; background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; padding: 5px; }
+
+        /* SIDEBAR OVERLAY */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 998;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            body {
+                grid-template-columns: 0 1fr;
+            }
+            .hamburger { display: block; }
+            .topbar .description { display: none; }
+            .sidebar {
+                position: fixed;
+                top: 60px;
+                left: -220px;
+                width: 220px;
+                height: calc(100vh - 60px);
+                z-index: 999;
+                transition: left 0.3s ease;
+            }
+            .sidebar.open { left: 0; }
+            .sidebar-overlay.open { display: block; }
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="../../../index.php">
-                <i class="fas fa-users-cog me-2"></i>ExpertHub
-            </a>
-            
-            <div class="navbar-nav mx-auto">
-                <a class="nav-link active" href="index.php?lang=<?php echo $lang; ?>">
-                    <i class="fas fa-home me-1"></i>Home
-                </a>
-                
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <div class="d-flex align-items-center gap-3">
+            <button class="hamburger" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+            <a href="../../../index.php" class="brand"><i class="fas fa-users-cog me-2"></i>ExpertHub</a>
+        </div>
+        <span class="description">
+            Welcome back, <?php echo $user['first_name']; ?>! 👋
+        </span>
+        <div class="profile-area dropdown">
+            <button class="btn p-0 border-0 d-flex align-items-center gap-2" data-bs-toggle="dropdown">
+                <?php if (!empty($user['profile_image'])): ?>
+                    <img src="../../../<?php echo $user['profile_image']; ?>" alt="Profile">
+                <?php else: ?>
+                    <div class="avatar"><?php echo strtoupper(substr($user['first_name'], 0, 1) . substr($user['last_name'], 0, 1)); ?></div>
+                <?php endif; ?>
+                <span class="name"><?php echo $user['first_name']; ?></span>
+                <i class="fas fa-chevron-down text-white" style="font-size:0.7rem;"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
                 <?php if ($user_type === 'customer'): ?>
-                    <a class="nav-link" href="../customer/browse-services.php?lang=<?php echo $lang; ?>">
-                        <i class="fas fa-search me-1"></i>Browse Services
-                    </a>
-                    <a class="nav-link" href="../customer/orders.php?lang=<?php echo $lang; ?>">
-                        <i class="fas fa-list-alt me-1"></i>My Orders
-                    </a>
-                    <a class="nav-link" href="../customer/messages.php?lang=<?php echo $lang; ?>">
-                        <i class="fas fa-comments me-1"></i>Messages
-                    </a>
-                    <a class="nav-link" href="../customer/devices.php?lang=<?php echo $lang; ?>">
-                        <i class="fas fa-laptop me-1"></i>My Devices
-                    </a>
-                    <a class="nav-link" href="../customer/wallet.php?lang=<?php echo $lang; ?>">
-                        <i class="fas fa-wallet me-1"></i>Wallet
-                    </a>
-                    <a class="nav-link" href="../customer/support.php?lang=<?php echo $lang; ?>">
-                        <i class="fas fa-headset me-1"></i>Support
-                    </a>
-                    
+                    <li><a class="dropdown-item" href="../customer/profile.php?lang=<?php echo $lang; ?>"><i class="fas fa-user me-2"></i>My Profile</a></li>
                 <?php elseif ($user_type === 'provider'): ?>
-                    <a class="nav-link" href="../provider/orders.php?lang=<?php echo $lang; ?>">
-                        <i class="fas fa-shopping-bag me-1"></i>Orders
-                    </a>
-                    <a class="nav-link" href="../provider/my-services.php?lang=<?php echo $lang; ?>">
-                        <i class="fas fa-briefcase me-1"></i>My Services
-                    </a>
-                    <a class="nav-link" href="../provider/create-service.php?lang=<?php echo $lang; ?>">
-                        <i class="fas fa-plus me-1"></i>Create Service
-                    </a>
-                    <a class="nav-link" href="../provider/messages.php?lang=<?php echo $lang; ?>">
-                        <i class="fas fa-comments me-1"></i>Messages
-                    </a>
-                    <a class="nav-link" href="#" onclick="alert('Calendar - Coming Soon')">
-                        <i class="fas fa-calendar me-1"></i>Calendar
-                    </a>
-                    <a class="nav-link" href="../provider/earnings.php?lang=<?php echo $lang; ?>">
-                        <i class="fas fa-dollar-sign me-1"></i>Earnings
-                    </a>
-                    
+                    <li><a class="dropdown-item" href="../provider/profile.php?lang=<?php echo $lang; ?>"><i class="fas fa-user-tie me-2"></i>My Profile</a></li>
+                <?php endif; ?>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="../../../logout.php"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+
+        <?php if ($user_type === 'customer'): ?>
+
+            <div class="section-label">🏠 Dashboard</div>
+            <a href="index.php?lang=<?php echo $lang; ?>" class="active"><i class="fas fa-home"></i>Dashboard</a>
+
+            <div class="section-label">🛒 Services</div>
+            <a href="../customer/browse-services.php?lang=<?php echo $lang; ?>"><i class="fas fa-search"></i>Browse Services</a>
+            <a href="../customer/categories.php?lang=<?php echo $lang; ?>"><i class="fas fa-th-large"></i>Categories</a>
+            <a href="../customer/search-services.php?lang=<?php echo $lang; ?>"><i class="fas fa-filter"></i>Search Services</a>
+            <a href="../customer/compare-services.php?lang=<?php echo $lang; ?>"><i class="fas fa-balance-scale"></i>Compare Services</a>
+            <a href="../customer/saved-services.php?lang=<?php echo $lang; ?>"><i class="fas fa-bookmark"></i>Saved Services</a>
+
+            <div class="section-label">🛍 Orders</div>
+            <a href="../customer/orders.php?lang=<?php echo $lang; ?>"><i class="fas fa-list-alt"></i>My Orders</a>
+            <a href="../customer/orders.php?status=active&lang=<?php echo $lang; ?>"><i class="fas fa-spinner"></i>Active Orders</a>
+            <a href="../customer/orders.php?status=review&lang=<?php echo $lang; ?>"><i class="fas fa-star-half-alt"></i>Pending Review</a>
+            <a href="../customer/orders.php?status=completed&lang=<?php echo $lang; ?>"><i class="fas fa-check-circle"></i>Completed Orders</a>
+            <a href="../customer/orders.php?status=cancelled&lang=<?php echo $lang; ?>"><i class="fas fa-times-circle"></i>Cancelled Orders</a>
+
+            <div class="section-label">💬 Communication</div>
+            <a href="../customer/messages.php?lang=<?php echo $lang; ?>"><i class="fas fa-comments"></i>Messages</a>
+            <a href="../customer/notifications.php?lang=<?php echo $lang; ?>"><i class="fas fa-bell"></i>Notifications</a>
+
+            <div class="section-label">📁 Documents &amp; Devices</div>
+            <a href="../customer/documents.php?lang=<?php echo $lang; ?>"><i class="fas fa-file-alt"></i>My Documents</a>
+            <a href="../customer/shared-files.php?lang=<?php echo $lang; ?>"><i class="fas fa-share-alt"></i>Shared Files</a>
+            <a href="../customer/templates.php?lang=<?php echo $lang; ?>"><i class="fas fa-copy"></i>Templates</a>
+            <a href="../customer/devices.php?lang=<?php echo $lang; ?>"><i class="fas fa-laptop"></i>My Devices</a>
+
+            <div class="section-label">💰 Payments</div>
+            <a href="../customer/wallet.php?lang=<?php echo $lang; ?>"><i class="fas fa-wallet"></i>My Wallet</a>
+            <a href="../customer/payment-methods.php?lang=<?php echo $lang; ?>"><i class="fas fa-credit-card"></i>Payment Methods</a>
+            <a href="../customer/transactions.php?lang=<?php echo $lang; ?>"><i class="fas fa-exchange-alt"></i>Transactions</a>
+            <a href="../customer/invoices.php?lang=<?php echo $lang; ?>"><i class="fas fa-file-invoice"></i>Invoices</a>
+            <a href="../customer/refunds.php?lang=<?php echo $lang; ?>"><i class="fas fa-undo"></i>Refunds</a>
+
+        
+
+           
+            <div class="section-label">🆘 Support</div>
+            <a href="../customer/help.php?lang=<?php echo $lang; ?>"><i class="fas fa-question-circle"></i>Help Center</a>
+            <a href="../customer/tickets.php?lang=<?php echo $lang; ?>"><i class="fas fa-ticket-alt"></i>Support Tickets</a>
+            <a href="../customer/contact.php?lang=<?php echo $lang; ?>"><i class="fas fa-headset"></i>Contact Support</a>
+
+        <?php elseif ($user_type === 'provider'): ?>
+
+            <div class="section-label">🏠 Dashboard</div>
+            <a href="index.php?lang=<?php echo $lang; ?>" class="active"><i class="fas fa-home"></i>Dashboard</a>
+            <a href="../provider/performance.php?lang=<?php echo $lang; ?>"><i class="fas fa-chart-line"></i>Performance Overview</a>
+
+            <div class="section-label">📦 Orders</div>
+            <a href="../provider/orders.php?lang=<?php echo $lang; ?>"><i class="fas fa-shopping-bag"></i>All Orders</a>
+            <a href="../provider/orders.php?status=active&lang=<?php echo $lang; ?>"><i class="fas fa-spinner"></i>Active Orders</a>
+            <a href="../provider/orders.php?status=completed&lang=<?php echo $lang; ?>"><i class="fas fa-check-circle"></i>Completed Orders</a>
+            <a href="../provider/order-board.php?lang=<?php echo $lang; ?>"><i class="fas fa-columns"></i>Order Board</a>
+
+            <div class="section-label">📥 Requests</div>
+            <a href="../provider/requests.php?lang=<?php echo $lang; ?>"><i class="fas fa-inbox"></i>New Requests</a>
+            <a href="../provider/quotes.php?status=pending&lang=<?php echo $lang; ?>"><i class="fas fa-file-signature"></i>Pending Quotes</a>
+            <a href="../provider/negotiations.php?lang=<?php echo $lang; ?>"><i class="fas fa-handshake"></i>Negotiations</a>
+
+            <div class="section-label">🛠 Services</div>
+            <a href="../provider/my-services.php?lang=<?php echo $lang; ?>"><i class="fas fa-briefcase"></i>My Services</a>
+            <a href="../provider/create-service.php?lang=<?php echo $lang; ?>"><i class="fas fa-plus"></i>Create Service</a>
+            <a href="../provider/templates.php?lang=<?php echo $lang; ?>"><i class="fas fa-copy"></i>Service Templates</a>
+            <a href="../provider/portfolio.php?lang=<?php echo $lang; ?>"><i class="fas fa-images"></i>Portfolio</a>
+
+            <div class="section-label">📅 Schedule</div>
+            <a href="../provider/calendar.php?lang=<?php echo $lang; ?>"><i class="fas fa-calendar-alt"></i>Calendar</a>
+            <a href="../provider/availability.php?lang=<?php echo $lang; ?>"><i class="fas fa-clock"></i>Availability</a>
+            <a href="../provider/appointments.php?lang=<?php echo $lang; ?>"><i class="fas fa-calendar-check"></i>Appointments</a>
+
+            <div class="section-label">💬 Communication</div>
+            <a href="../provider/messages.php?lang=<?php echo $lang; ?>"><i class="fas fa-comments"></i>Messages</a>
+            <a href="../provider/notifications.php?lang=<?php echo $lang; ?>"><i class="fas fa-bell"></i>Notifications</a>
+
+            <div class="section-label">📁 Work &amp; Files</div>
+            <a href="../provider/deliverables.php?lang=<?php echo $lang; ?>"><i class="fas fa-paper-plane"></i>Deliverables</a>
+            <a href="../provider/documents.php?lang=<?php echo $lang; ?>"><i class="fas fa-file-alt"></i>Documents</a>
+            <a href="../provider/file-manager.php?lang=<?php echo $lang; ?>"><i class="fas fa-folder-open"></i>File Manager</a>
+
+            <div class="section-label">💰 Earnings</div>
+            <a href="../provider/earnings.php?lang=<?php echo $lang; ?>"><i class="fas fa-dollar-sign"></i>Earnings Dashboard</a>
+            <a href="../provider/transactions.php?lang=<?php echo $lang; ?>"><i class="fas fa-exchange-alt"></i>Transactions</a>
+            <a href="../provider/withdraw.php?lang=<?php echo $lang; ?>"><i class="fas fa-money-bill-wave"></i>Withdraw Funds</a>
+            <a href="../provider/invoices.php?lang=<?php echo $lang; ?>"><i class="fas fa-file-invoice"></i>Invoices</a>
+            <a href="../provider/quotes.php?lang=<?php echo $lang; ?>"><i class="fas fa-file-invoice-dollar"></i>Quotes</a>
+
+            <div class="section-label">👥 Clients</div>
+            <a href="../provider/clients.php?lang=<?php echo $lang; ?>"><i class="fas fa-users"></i>My Clients</a>
+            <a href="../provider/client-management.php?lang=<?php echo $lang; ?>"><i class="fas fa-user-cog"></i>Client Management</a>
+
+            <div class="section-label">⭐ Reviews</div>
+            <a href="../provider/reviews.php?lang=<?php echo $lang; ?>"><i class="fas fa-star"></i>Reviews</a>
+            <a href="../provider/ratings.php?lang=<?php echo $lang; ?>"><i class="fas fa-chart-bar"></i>Ratings</a>
+            <a href="../provider/performance-metrics.php?lang=<?php echo $lang; ?>"><i class="fas fa-tachometer-alt"></i>Performance Metrics</a>
+
+            <div class="section-label">📢 Growth</div>
+            <a href="../provider/promotions.php?lang=<?php echo $lang; ?>"><i class="fas fa-bullhorn"></i>Promotions</a>
+            <a href="../provider/offers.php?lang=<?php echo $lang; ?>"><i class="fas fa-tags"></i>Offers</a>
+            <a href="../provider/profile-optimization.php?lang=<?php echo $lang; ?>"><i class="fas fa-rocket"></i>Profile Optimization</a>
+
+            <div class="section-label">⚖️ Disputes</div>
+            <a href="../provider/disputes.php?lang=<?php echo $lang; ?>"><i class="fas fa-gavel"></i>Dispute Center</a>
+            <a href="../provider/compliance.php?lang=<?php echo $lang; ?>"><i class="fas fa-clipboard-check"></i>Compliance</a>
+
+            <div class="section-label">⚙️ Settings</div>
+            <a href="../provider/profile.php?lang=<?php echo $lang; ?>"><i class="fas fa-user-tie"></i>Profile Settings</a>
+            <a href="../provider/account-settings.php?lang=<?php echo $lang; ?>"><i class="fas fa-cog"></i>Account Settings</a>
+            <a href="../provider/team.php?lang=<?php echo $lang; ?>"><i class="fas fa-users-cog"></i>Team Management</a>
+
+            <div class="section-label">🆘 Support</div>
+            <a href="../provider/support.php?lang=<?php echo $lang; ?>"><i class="fas fa-headset"></i>Provider Support</a>
+            <a href="../provider/resources.php?lang=<?php echo $lang; ?>"><i class="fas fa-book"></i>Resource Center</a>
+
+        <?php elseif ($user_type === 'admin'): ?>
+
+            <div class="section-label">🏠 Dashboard</div>
+            <a href="index.php" class="active"><i class="fas fa-home"></i>Dashboard</a>
+            <a href="../admin/analytics.php"><i class="fas fa-chart-pie"></i>Analytics Overview</a>
+
+            <div class="section-label">👤 Users</div>
+            <a href="../admin/customers.php"><i class="fas fa-user"></i>Customers</a>
+            <a href="../admin/providers.php"><i class="fas fa-user-tie"></i>Providers</a>
+            <a href="../admin/admins.php"><i class="fas fa-user-shield"></i>Admins</a>
+            <a href="../admin/verification.php"><i class="fas fa-id-badge"></i>Verification</a>
+
+            <div class="section-label">🛒 Services</div>
+            <a href="../../../browse-services.php"><i class="fas fa-briefcase"></i>Service Listings</a>
+            <a href="../admin/categories.php"><i class="fas fa-th-large"></i>Categories</a>
+            <a href="../admin/approvals.php"><i class="fas fa-check-double"></i>Approvals</a>
+
+            <div class="section-label">📦 Orders</div>
+            <a href="../admin/orders.php"><i class="fas fa-shopping-bag"></i>All Orders</a>
+            <a href="../admin/orders.php?status=active"><i class="fas fa-spinner"></i>Active Orders</a>
+            <a href="../admin/disputes.php"><i class="fas fa-gavel"></i>Disputes</a>
+            <a href="../admin/refunds.php"><i class="fas fa-undo"></i>Refund Requests</a>
+
+            <div class="section-label">💰 Finance</div>
+            <a href="../admin/transactions.php"><i class="fas fa-exchange-alt"></i>Transactions</a>
+            <a href="../admin/commissions.php"><i class="fas fa-percentage"></i>Commissions</a>
+            <a href="../admin/payouts.php"><i class="fas fa-money-bill-wave"></i>Payouts</a>
+            <a href="../admin/revenue.php"><i class="fas fa-chart-line"></i>Revenue Reports</a>
+
+            <div class="section-label">⭐ Reviews</div>
+            <a href="../admin/reviews.php"><i class="fas fa-star"></i>Reviews Monitoring</a>
+            <a href="../admin/ratings.php"><i class="fas fa-chart-bar"></i>Ratings Analysis</a>
+
+            <div class="section-label">⚖️ Disputes</div>
+            <a href="../admin/dispute-cases.php"><i class="fas fa-balance-scale"></i>Dispute Cases</a>
+            <a href="../admin/resolution.php"><i class="fas fa-handshake"></i>Resolution Center</a>
+
+            <div class="section-label">📊 Analytics</div>
+            <a href="../admin/user-analytics.php"><i class="fas fa-users"></i>User Analytics</a>
+            <a href="../admin/revenue-analytics.php"><i class="fas fa-dollar-sign"></i>Revenue Analytics</a>
+            <a href="../admin/service-trends.php"><i class="fas fa-trending-up"></i>Service Trends</a>
+
+            <div class="section-label">📢 Communication</div>
+            <a href="../admin/notifications.php"><i class="fas fa-bell"></i>Notifications</a>
+            <a href="../admin/email-templates.php"><i class="fas fa-envelope"></i>Email/SMS Templates</a>
+            <a href="../admin/announcements.php"><i class="fas fa-bullhorn"></i>Announcements</a>
+
+            <div class="section-label">📚 Content</div>
+            <a href="../admin/knowledge-base.php"><i class="fas fa-book"></i>Knowledge Base</a>
+            <a href="../admin/faqs.php"><i class="fas fa-question-circle"></i>FAQs</a>
+            <a href="../admin/manage_about.php"><i class="fas fa-images"></i>Manage Photos</a>
+
+            <div class="section-label">⚙️ System</div>
+            <a href="../admin/platform-settings.php"><i class="fas fa-cogs"></i>Platform Settings</a>
+            <a href="../admin/api-settings.php"><i class="fas fa-plug"></i>API Settings</a>
+            <a href="../admin/security-settings.php"><i class="fas fa-shield-alt"></i>Security Settings</a>
+            <a href="../admin/tax-compliance.php"><i class="fas fa-file-contract"></i>Tax &amp; Compliance</a>
+
+            <div class="section-label">🔗 Integrations</div>
+            <a href="../admin/payment-gateways.php"><i class="fas fa-credit-card"></i>Payment Gateways</a>
+            <a href="../admin/third-party-apis.php"><i class="fas fa-code"></i>Third-party APIs</a>
+
+            <div class="section-label">🛡 Security</div>
+            <a href="../admin/activity-logs.php"><i class="fas fa-history"></i>Activity Logs</a>
+            <a href="../admin/system-monitoring.php"><i class="fas fa-desktop"></i>System Monitoring</a>
+
+            <div class="section-label">🆘 Support</div>
+            <a href="../admin/tickets.php"><i class="fas fa-ticket-alt"></i>Support Tickets</a>
+            <a href="../admin/bug-reports.php"><i class="fas fa-bug"></i>Bug Reports</a>
+
+        <?php endif; ?>
+
+        <div class="section-label">─────────────</div>
+        <a href="../../../logout.php"><i class="fas fa-sign-out-alt"></i>Logout</a>
+    </div>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrapper">
+        <div class="main-content">
+
+            <!-- Stats -->
+            <div class="row g-3 mb-4">
+                <?php if ($user_type === 'customer'): ?>
+                    <div class="col-6 col-md-3"><div class="stat-card"><div class="stat-icon"><i class="fas fa-clock"></i></div><h5><?php echo $stats['active_orders']; ?></h5><p>Active Orders</p></div></div>
+                    <div class="col-6 col-md-3"><div class="stat-card"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><h5><?php echo $stats['completed_orders']; ?></h5><p>Completed</p></div></div>
+                    <div class="col-6 col-md-3"><div class="stat-card"><div class="stat-icon"><i class="fas fa-dollar-sign"></i></div><h5>$<?php echo number_format($stats['total_spent'], 0); ?></h5><p>Total Spent</p></div></div>
+                    <div class="col-6 col-md-3"><div class="stat-card"><div class="stat-icon"><i class="fas fa-bookmark"></i></div><h5><?php echo $stats['saved_items']; ?></h5><p>Saved Items</p></div></div>
+
+                <?php elseif ($user_type === 'provider'): ?>
+                    <div class="col-6 col-md-2"><div class="stat-card"><div class="stat-icon"><i class="fas fa-dollar-sign"></i></div><h5>$<?php echo number_format($stats['total_earnings'] ?? 0, 0); ?></h5><p>Earnings</p></div></div>
+                    <div class="col-6 col-md-2"><div class="stat-card"><div class="stat-icon"><i class="fas fa-briefcase"></i></div><h5><?php echo $stats['total_services'] ?? 0; ?></h5><p>Services</p></div></div>
+                    <div class="col-6 col-md-2"><div class="stat-card"><div class="stat-icon"><i class="fas fa-shopping-bag"></i></div><h5><?php echo $stats['active_orders'] ?? 0; ?></h5><p>Active Orders</p></div></div>
+                    <div class="col-6 col-md-2"><div class="stat-card"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><h5><?php echo $stats['completed_orders'] ?? 0; ?></h5><p>Completed</p></div></div>
+                    <div class="col-6 col-md-2"><div class="stat-card"><div class="stat-icon"><i class="fas fa-star"></i></div><h5><?php echo number_format($user['rating'] ?? 0, 1); ?></h5><p>Rating</p></div></div>
+                    <div class="col-6 col-md-2"><div class="stat-card"><div class="stat-icon"><i class="fas fa-clock"></i></div><h5><?php echo $stats['avg_response_time'] ?? '0m'; ?></h5><p>Avg Response</p></div></div>
+
                 <?php elseif ($user_type === 'admin'): ?>
-                    <a class="nav-link" href="../../../browse-services.php">
-                        <i class="fas fa-briefcase me-1"></i>Services
-                    </a>
-                    <a class="nav-link" href="#" onclick="alert('Users - Coming Soon')">
-                        <i class="fas fa-users me-1"></i>Users
-                    </a>
-                    <a class="nav-link" href="#" onclick="alert('Analytics - Coming Soon')">
-                        <i class="fas fa-chart-bar me-1"></i>Analytics
-                    </a>
+                    <div class="col-6 col-md-3"><div class="stat-card"><div class="stat-icon"><i class="fas fa-users"></i></div><h5><?php echo $stats['total_users']; ?></h5><p>Total Users</p></div></div>
+                    <div class="col-6 col-md-3"><div class="stat-card"><div class="stat-icon"><i class="fas fa-briefcase"></i></div><h5><?php echo $stats['total_services']; ?></h5><p>Services</p></div></div>
+                    <div class="col-6 col-md-3"><div class="stat-card"><div class="stat-icon"><i class="fas fa-shopping-bag"></i></div><h5><?php echo $stats['active_orders']; ?></h5><p>Active Orders</p></div></div>
+                    <div class="col-6 col-md-3"><div class="stat-card"><div class="stat-icon"><i class="fas fa-dollar-sign"></i></div><h5>$<?php echo number_format($stats['total_revenue'], 0); ?></h5><p>Revenue</p></div></div>
                 <?php endif; ?>
             </div>
-            
-            <div class="dropdown">
-                <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown">
-                    <?php if ($user['profile_image']): ?>
-                        <img src="../../../<?php echo $user['profile_image']; ?>" alt="Profile" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
-                    <?php else: ?>
-                        <div class="rounded-circle bg-light text-dark d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-size: 14px;">
-                            <?php echo strtoupper(substr($user['first_name'], 0, 1) . substr($user['last_name'], 0, 1)); ?>
-                        </div>
-                    <?php endif; ?>
-                    <?php echo $user['first_name']; ?>
-                </button>
-                <ul class="dropdown-menu">
-                    <?php if ($user_type === 'customer'): ?>
-                        <li><a class="dropdown-item" href="../customer/profile.php?lang=<?php echo $lang; ?>">
-                            <i class="fas fa-user me-2"></i>My Profile</a></li>
-                    <?php elseif ($user_type === 'provider'): ?>
-                        <li><a class="dropdown-item" href="../provider/profile.php?lang=<?php echo $lang; ?>">
-                            <i class="fas fa-user-tie me-2"></i>My Profile</a></li>
-                    <?php endif; ?>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="../../../logout.php">
-                        <i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                </ul>
-            </div>
-        </div>
-    </nav>
 
-    <div class="container-fluid py-4">
-        <?php if ($user_type === 'customer'): ?>
-            <!-- CUSTOMER DASHBOARD -->
-            <!-- Welcome Section -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
-                                    <h2 class="mb-1">Welcome back, <?php echo $user['first_name']; ?>! 👋</h2>
-                                    <p class="text-secondary-custom mb-0">Customer Dashboard - Manage your services and orders</p>
-                                </div>
-                                <div class="col-md-4 text-end">
-                                    <button class="btn btn-accent btn-lg" data-bs-toggle="modal" data-bs-target="#getServiceModal">
-                                        <i class="fas fa-plus me-2"></i>Get Service Now
-                                    </button>
-                                </div>
-                            </div>
+            <!-- Content Row -->
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <div class="content-card">
+                        <div class="card-header"><i class="fas fa-history me-2" style="color:var(--accent)"></i>Recent Activity</div>
+                        <div class="card-body text-center py-4">
+                            <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                            <p class="text-muted small mb-0">No recent activity to display</p>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Quick Stats -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="card service-card text-center">
-                        <div class="card-body p-4">
-                            <div class="service-icon">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                            <h4 class="text-primary"><?php echo $stats['active_orders']; ?></h4>
-                            <p class="text-muted mb-0">Active Orders</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card service-card text-center">
-                        <div class="card-body p-4">
-                            <div class="service-icon">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
-                            <h4 class="text-primary"><?php echo $stats['completed_orders']; ?></h4>
-                            <p class="text-muted mb-0">Completed Orders</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card service-card text-center">
-                        <div class="card-body p-4">
-                            <div class="service-icon">
-                                <i class="fas fa-dollar-sign"></i>
-                            </div>
-                            <h4 class="text-primary">$<?php echo number_format($stats['total_spent'], 2); ?></h4>
-                            <p class="text-muted mb-0">Total Spent</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card service-card text-center">
-                        <div class="card-body p-4">
-                            <div class="service-icon">
-                                <i class="fas fa-bookmark"></i>
-                            </div>
-                            <h4 class="text-primary"><?php echo $stats['saved_items']; ?></h4>
-                            <p class="text-muted mb-0">Saved Items</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-        <?php elseif ($user_type === 'provider'): ?>
-            <!-- PROVIDER DASHBOARD -->
-            <!-- Welcome Section -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card provider-stats">
-                        <div class="card-body">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
-                                    <h2 class="mb-1 text-white">Welcome back, <?php echo $user['first_name']; ?>! 👋</h2>
-                                    <p class="text-white-50 mb-0">Service Provider Dashboard - Manage your services and grow your business</p>
-                                </div>
-                                <div class="col-md-4 text-end">
-                                    <a href="../provider/create-service.php?lang=<?php echo $lang; ?>" class="btn btn-light btn-lg">
-                                        <i class="fas fa-plus me-2"></i>Create New Service
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Performance Summary -->
-            <div class="row mb-4">
-                <div class="col-md-2">
-                    <div class="card service-card text-center">
-                        <div class="card-body p-4">
-                            <div class="service-icon">
-                                <i class="fas fa-dollar-sign"></i>
-                            </div>
-                            <h4 class="text-primary">$<?php echo number_format($stats['total_earnings'] ?? 0, 0); ?></h4>
-                            <p class="text-muted mb-0">Total Earnings</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="card service-card text-center">
-                        <div class="card-body p-4">
-                            <div class="service-icon">
-                                <i class="fas fa-briefcase"></i>
-                            </div>
-                            <h4 class="text-primary"><?php echo $stats['total_services'] ?? 0; ?></h4>
-                            <p class="text-muted mb-0">Active Services</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="card service-card text-center">
-                        <div class="card-body p-4">
-                            <div class="service-icon">
-                                <i class="fas fa-shopping-bag"></i>
-                            </div>
-                            <h4 class="text-primary"><?php echo $stats['active_orders'] ?? 0; ?></h4>
-                            <p class="text-muted mb-0">Active Orders</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="card service-card text-center">
-                        <div class="card-body p-4">
-                            <div class="service-icon">
-                                <i class="fas fa-star"></i>
-                            </div>
-                            <h4 class="text-primary"><?php echo number_format($user['rating'] ?? 0, 1); ?></h4>
-                            <p class="text-muted mb-0">Rating</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="card service-card text-center">
-                        <div class="card-body p-4">
-                            <div class="service-icon">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                            <h4 class="text-primary"><?php echo $stats['avg_response_time'] ?? '0m'; ?></h4>
-                            <p class="text-muted mb-0">Avg Response</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="card service-card text-center">
-                        <div class="card-body p-4">
-                            <div class="service-icon">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
-                            <h4 class="text-primary"><?php echo $user['completion_rate'] ?? '98'; ?>%</h4>
-                            <p class="text-muted mb-0">Completion Rate</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-        <?php elseif ($user_type === 'admin'): ?>
-            <!-- ADMIN DASHBOARD -->
-            <!-- Welcome Section -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card admin-stats">
-                        <div class="card-body">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
-                                    <h2 class="mb-1 text-white">Welcome back, <?php echo $user['first_name']; ?>! 👋</h2>
-                                    <p class="text-white-50 mb-0">Admin Dashboard - Platform Management & Analytics</p>
-                                </div>
-                                <div class="col-md-4 text-end">
-                                    <button class="btn btn-light btn-lg">
-                                        <i class="fas fa-cog me-2"></i>System Settings
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Admin Stats -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="card service-card text-center">
-                        <div class="card-body p-4">
-                            <div class="service-icon">
-                                <i class="fas fa-users"></i>
-                            </div>
-                            <h4 class="text-primary"><?php echo $stats['total_users']; ?></h4>
-                            <p class="text-muted mb-0">Total Users</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card service-card text-center">
-                        <div class="card-body p-4">
-                            <div class="service-icon">
-                                <i class="fas fa-briefcase"></i>
-                            </div>
-                            <h4 class="text-primary"><?php echo $stats['total_services']; ?></h4>
-                            <p class="text-muted mb-0">Total Services</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card service-card text-center">
-                        <div class="card-body p-4">
-                            <div class="service-icon">
-                                <i class="fas fa-shopping-bag"></i>
-                            </div>
-                            <h4 class="text-primary"><?php echo $stats['active_orders']; ?></h4>
-                            <p class="text-muted mb-0">Active Orders</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card service-card text-center">
-                        <div class="card-body p-4">
-                            <div class="service-icon">
-                                <i class="fas fa-dollar-sign"></i>
-                            </div>
-                            <h4 class="text-primary">$<?php echo number_format($stats['total_revenue'], 2); ?></h4>
-                            <p class="text-muted mb-0">Platform Revenue</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        <?php endif; ?>
-        
-        <!-- Common Activity Section -->
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-history me-2 text-accent"></i>Recent Activity</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="text-center py-4">
-                            <i class="fas fa-inbox fa-3x text-secondary-custom mb-3"></i>
-                            <h6>No recent activity to display</h6>
-                            <p class="text-secondary-custom">Recent updates and activities will appear here.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h6><i class="fas fa-bolt me-2 text-accent"></i>Quick Actions</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
+                <div class="col-md-4">
+                    <div class="content-card">
+                        <div class="card-header"><i class="fas fa-bolt me-2" style="color:var(--accent)"></i>Quick Actions</div>
+                        <div class="card-body d-grid gap-2">
                             <?php if ($user_type === 'customer'): ?>
-                                <a href="../customer/browse-services.php?lang=<?php echo $lang; ?>" class="btn btn-primary">
-                                    <i class="fas fa-search me-2"></i>Browse Services
-                                </a>
-                                <a href="../customer/orders.php?lang=<?php echo $lang; ?>" class="btn btn-outline-primary">
-                                    <i class="fas fa-list me-2"></i>My Orders
-                                </a>
+                                <a href="../customer/browse-services.php?lang=<?php echo $lang; ?>" class="btn btn-primary btn-sm"><i class="fas fa-search me-1"></i>Browse Services</a>
+                                <a href="../customer/orders.php?lang=<?php echo $lang; ?>" class="btn btn-outline-primary btn-sm"><i class="fas fa-list me-1"></i>My Orders</a>
+                                <a href="../customer/messages.php?lang=<?php echo $lang; ?>" class="btn btn-outline-secondary btn-sm"><i class="fas fa-comments me-1"></i>Messages</a>
                             <?php elseif ($user_type === 'provider'): ?>
-                                <a href="../provider/create-service.php?lang=<?php echo $lang; ?>" class="btn btn-success">
-                                    <i class="fas fa-plus me-2"></i>Create Service
-                                </a>
+                                <a href="../provider/create-service.php?lang=<?php echo $lang; ?>" class="btn btn-success btn-sm"><i class="fas fa-plus me-1"></i>Create Service</a>
+                                <a href="../provider/orders.php?lang=<?php echo $lang; ?>" class="btn btn-outline-primary btn-sm"><i class="fas fa-shopping-bag me-1"></i>View Orders</a>
+                                <a href="../provider/messages.php?lang=<?php echo $lang; ?>" class="btn btn-outline-secondary btn-sm"><i class="fas fa-comments me-1"></i>Messages</a>
                             <?php elseif ($user_type === 'admin'): ?>
-                                <a href="../customer/browse-services.php?lang=<?php echo $lang; ?>" class="btn btn-danger">
-                                    <i class="fas fa-briefcase me-2"></i>View Services
-                                </a>
+                                <a href="../../../browse-services.php" class="btn btn-primary btn-sm"><i class="fas fa-briefcase me-1"></i>View Services</a>
+                                <a href="../admin/manage_about.php" class="btn btn-outline-primary btn-sm"><i class="fas fa-images me-1"></i>Manage Photos</a>
                             <?php endif; ?>
                         </div>
                     </div>
                 </div>
             </div>
+
         </div>
+
     </div>
 
-    <!-- Get Service Modal (Customer Only) -->
-    <?php if ($user_type === 'customer'): ?>
-    <div class="modal fade" id="getServiceModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-search me-2 text-accent"></i>Get Service Now</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="card quick-action-card h-100" onclick="redirectToService('web-development')">
-                                <div class="card-body text-center p-4">
-                                    <i class="fas fa-code fa-3x text-primary mb-3"></i>
-                                    <h6>Web Development</h6>
-                                    <small class="text-secondary-custom">Websites, apps, e-commerce</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card quick-action-card h-100" onclick="redirectToService('graphic-design')">
-                                <div class="card-body text-center p-4">
-                                    <i class="fas fa-palette fa-3x text-accent mb-3"></i>
-                                    <h6>Graphic Design</h6>
-                                    <small class="text-secondary-custom">Logos, branding, UI/UX</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="text-center">
-                        <button class="btn btn-primary" onclick="redirectToService('all')">
-                            <i class="fas fa-th-large me-2"></i>Browse All Services
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
-    
     <?php include '../../../includes/footer.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function redirectToService(category) {
-            if (category === 'all') {
-                window.location.href = '../../../browse-services.php';
-            } else {
-                window.location.href = `../../../browse-services.php?category=${category}`;
-            }
-        }
+        const toggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        toggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        });
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+        });
     </script>
 </body>
 </html>

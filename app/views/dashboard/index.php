@@ -77,6 +77,7 @@ $page_map = [
     'search-services'  => '../customer/search-services.php',
     'compare-services' => '../customer/compare-services.php',
     'saved-services'   => '../customer/saved-services.php',
+    'notifications'    => '../customer/notifications.php',
     'orders'           => '../customer/orders.php',
     'messages'         => '../customer/' . ($user_type === 'provider' ? '' : '') . 'messages.php',
     'devices'          => '../customer/devices.php',
@@ -188,7 +189,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
 
             <div class="section-label">💬 Communication</div>
             <a href="#" data-page="messages"><i class="fas fa-comments"></i>Messages</a>
-            <a href="../customer/notifications.php?lang=<?php echo $lang; ?>"><i class="fas fa-bell"></i>Notifications</a>
+            <a href="#" data-page="notifications"><i class="fas fa-bell"></i>Notifications</a>
 
             <div class="section-label">📁 Documents &amp; Devices</div>
             <a href="../customer/documents.php?lang=<?php echo $lang; ?>"><i class="fas fa-file-alt"></i>My Documents</a>
@@ -237,7 +238,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
 
             <div class="section-label">💬 Communication</div>
             <a href="#" data-page="provider-messages"><i class="fas fa-comments"></i>Messages</a>
-            <a href="../provider/notifications.php?lang=<?php echo $lang; ?>"><i class="fas fa-bell"></i>Notifications</a>
+            <a href="#" data-page="notifications"><i class="fas fa-bell"></i>Notifications</a>
 
             <div class="section-label">📁 Work &amp; Files</div>
             <a href="../provider/deliverables.php?lang=<?php echo $lang; ?>"><i class="fas fa-paper-plane"></i>Deliverables</a>

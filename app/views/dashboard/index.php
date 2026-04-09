@@ -186,7 +186,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <a href="../customer/orders.php?status=cancelled&lang=<?php echo $lang; ?>"><i class="fas fa-times-circle"></i>Cancelled Orders</a>
 
             <div class="section-label">💬 Communication</div>
-            <a href="../customer/messages.php?lang=<?php echo $lang; ?>"><i class="fas fa-comments"></i>Messages</a>
+            <a href="#" data-page="messages"><i class="fas fa-comments"></i>Messages</a>
             <a href="../customer/notifications.php?lang=<?php echo $lang; ?>"><i class="fas fa-bell"></i>Notifications</a>
 
             <div class="section-label">📁 Documents &amp; Devices</div>
@@ -235,7 +235,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <a href="../provider/appointments.php?lang=<?php echo $lang; ?>"><i class="fas fa-calendar-check"></i>Appointments</a>
 
             <div class="section-label">💬 Communication</div>
-            <a href="../provider/messages.php?lang=<?php echo $lang; ?>"><i class="fas fa-comments"></i>Messages</a>
+            <a href="#" data-page="provider-messages"><i class="fas fa-comments"></i>Messages</a>
             <a href="../provider/notifications.php?lang=<?php echo $lang; ?>"><i class="fas fa-bell"></i>Notifications</a>
 
             <div class="section-label">📁 Work &amp; Files</div>

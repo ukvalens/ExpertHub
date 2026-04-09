@@ -183,7 +183,7 @@ foreach ($negotiations as $n) {
                     <div class="row g-2">
                         <!-- Counter offer -->
                         <div class="col-md-6">
-                            <form method="POST">
+                            <form class="neg-form">
                                 <input type="hidden" name="order_id" value="<?php echo $neg['id']; ?>">
                                 <input type="hidden" name="action" value="counter">
                                 <div class="input-group input-group-sm mb-1">
@@ -201,7 +201,7 @@ foreach ($negotiations as $n) {
                         </div>
                         <!-- Accept / Decline -->
                         <div class="col-md-6 d-flex flex-column gap-2">
-                            <form method="POST">
+                            <form class="neg-form">
                                 <input type="hidden" name="order_id" value="<?php echo $neg['id']; ?>">
                                 <input type="hidden" name="action" value="accept_counter">
                                 <input type="hidden" name="counter_price" value="<?php echo $neg['quoted_price']; ?>">
@@ -209,7 +209,7 @@ foreach ($negotiations as $n) {
                                     <i class="fas fa-check me-1"></i>Accept $<?php echo number_format($neg['quoted_price'] ?? 0, 2); ?>
                                 </button>
                             </form>
-                            <form method="POST" onsubmit="return confirm('End this negotiation?')">
+                            <form class="neg-form neg-decline">
                                 <input type="hidden" name="order_id" value="<?php echo $neg['id']; ?>">
                                 <input type="hidden" name="action" value="decline">
                                 <button class="btn btn-outline-danger btn-sm w-100">
@@ -242,3 +242,20 @@ foreach ($negotiations as $n) {
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+document.querySelectorAll('.neg-form').forEach(form => {
+    form.addEventListener('submit', e => {
+        e.preventDefault();
+        if (form.classList.contains('neg-decline') && !confirm('End this negotiation?')) return;
+        const data = new FormData(form);
+        fetch('index.php?page=negotiations&lang=<?php echo $_GET["lang"] ?? "en"; ?>', {
+            method: 'POST',
+            body: data,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }).then(() => {
+            if (typeof loadPage === 'function') loadPage('negotiations', false);
+        });
+    });
+});
+</script>

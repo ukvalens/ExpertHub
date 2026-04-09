@@ -6,7 +6,7 @@
     <title>ExpertHub - Online Service Marketplace</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css?v=12" rel="stylesheet">
+    <link href="assets/css/style.css?v=13" rel="stylesheet">
 
 </head>
 <body>
@@ -22,13 +22,13 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="#home">Home</a>
+                        <a class="nav-link active" href="#" onclick="showSection('home', this)">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#services">Services</a>
+                        <a class="nav-link" href="#" onclick="showSection('services', this)">Services</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#about">About</a>
+                        <a class="nav-link" href="#" onclick="showSection('about', this)">About</a>
                     </li>
                 </ul>
                 <div class="d-flex">
@@ -43,16 +43,16 @@
     <section id="home" class="hero-section">
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-lg-6">
-                    <h1 class="display-4 fw-bold mb-4">Find Expert Services for Any Task</h1>
-                    <p class="lead mb-4">Connect with verified professionals for web development, design, writing, consulting, and more. Get quality work delivered on time.</p>
-                    <div class="row g-3 mb-4">
+                <div class="col-lg-7">
+                    <h1 class="fw-bold mb-2" style="font-size:2rem;">Find Expert Services for Any Task</h1>
+                    <p class="mb-3">Connect with verified professionals for web development, design, writing, consulting, and more.</p>
+                    <div class="row g-2 mb-3">
                         <div class="col-md-8">
-                            <input type="text" class="form-control form-control-lg search-box" placeholder="What service do you need?">
+                            <input type="text" class="form-control search-box" placeholder="What service do you need?">
                         </div>
                         <div class="col-md-4">
-                            <a href="browse-services.php" class="btn btn-accent btn-lg w-100 search-btn">
-                                <i class="fas fa-search me-2"></i>Get Service Now
+                            <a href="browse-services.php" class="btn btn-accent w-100 search-btn">
+                                <i class="fas fa-search me-1"></i>Get Service Now
                             </a>
                         </div>
                     </div>
@@ -63,21 +63,18 @@
                         <span class="badge bg-light text-dark">Content Writing</span>
                     </div>
                 </div>
-                <div class="col-lg-6 text-center">
-                    <i class="fas fa-laptop-code" style="font-size: 15rem; opacity: 0.1;"></i>
-                </div>
             </div>
         </div>
     </section>
 
     <!-- Service Categories -->
-    <section id="services" class="py-5">
+    <section id="services" class="py-3">
         <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="fw-bold">Popular Service Categories</h2>
-                <p class="text-muted">Browse our most requested services</p>
+            <div class="text-center mb-3">
+                <h4 class="fw-bold">Popular Service Categories</h4>
+                <p class="text-muted small">Browse our most requested services</p>
             </div>
-            <div class="row g-4">
+            <div class="row g-2">
                 <div class="col-md-4 col-lg-3">
                     <div class="card service-card">
                         <div class="card-body text-center p-4">
@@ -171,11 +168,11 @@
     </section>
 
     <!-- About Section -->
-    <section id="about" class="py-5 bg-light">
+    <section id="about" class="py-3 bg-light">
         <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="fw-bold">About ExpertHub</h2>
-                <p class="text-muted">Meet our team and explore our services</p>
+            <div class="text-center mb-3">
+                <h4 class="fw-bold">About ExpertHub</h4>
+                <p class="text-muted small">Meet our team and explore our services</p>
             </div>
             
             <?php
@@ -244,9 +241,22 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        function showSection(id, el) {
+            document.querySelectorAll('section').forEach(s => s.style.display = 'none');
+            document.getElementById(id).style.display = 'flex';
+            document.getElementById(id).style.flexDirection = 'column';
+            document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        // Show home by default
+        showSection('home', document.querySelector('.nav-link'));
+
         setInterval(() => {
-            bootstrap.Carousel.getOrCreateInstance(document.getElementById('ownerCarousel')).next();
-            bootstrap.Carousel.getOrCreateInstance(document.getElementById('serviceCarousel')).next();
+            const owner = document.getElementById('ownerCarousel');
+            const service = document.getElementById('serviceCarousel');
+            if (owner) bootstrap.Carousel.getOrCreateInstance(owner).next();
+            if (service) bootstrap.Carousel.getOrCreateInstance(service).next();
         }, 3000);
     </script>
 </body>

@@ -150,6 +150,10 @@ $services = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                         <div class="card-footer bg-transparent d-flex justify-content-between align-items-center">
                             <span class="text-success fw-bold">$<?php echo number_format($svc['base_price'], 2); ?></span>
                             <div class="d-flex gap-1">
+                                <button class="btn btn-outline-secondary btn-sm save-svc-btn"
+                                    data-id="<?php echo $svc['id']; ?>" title="Save">
+                                    <i class="fas fa-bookmark"></i>
+                                </button>
                                 <button class="btn btn-outline-secondary btn-sm view-portfolio-btn"
                                     data-provider-id="<?php echo $svc['provider_id']; ?>"
                                     data-provider-name="<?php echo htmlspecialchars($svc['first_name'].' '.$svc['last_name']); ?>"
@@ -206,6 +210,20 @@ $services = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 </div>
 
 <script>
+document.querySelectorAll('.save-svc-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const data = new FormData();
+        data.append('action', 'save');
+        data.append('service_id', btn.dataset.id);
+        fetch('index.php?page=saved-services&lang=<?php echo $lang; ?>', {
+            method:'POST', body:data, headers:{'X-Requested-With':'XMLHttpRequest'}
+        }).then(() => {
+            btn.classList.replace('btn-outline-secondary','btn-warning');
+            btn.title = 'Saved!';
+        });
+    });
+});
+
 document.querySelectorAll('.view-portfolio-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.getElementById('portfolioModalName').textContent = btn.dataset.providerName;

@@ -76,6 +76,7 @@ $page_map = [
     'categories'       => '../customer/categories.php',
     'search-services'  => '../customer/search-services.php',
     'compare-services' => '../customer/compare-services.php',
+    'saved-services'   => '../customer/saved-services.php',
     'orders'           => '../customer/orders.php',
     'messages'         => '../customer/' . ($user_type === 'provider' ? '' : '') . 'messages.php',
     'devices'          => '../customer/devices.php',
@@ -176,7 +177,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <a href="#" data-page="categories"><i class="fas fa-th-large"></i>Categories</a>
             <a href="#" data-page="search-services"><i class="fas fa-filter"></i>Search Services</a>
             <a href="#" data-page="compare-services"><i class="fas fa-balance-scale"></i>Compare Services</a>
-            <a href="../customer/saved-services.php?lang=<?php echo $lang; ?>"><i class="fas fa-bookmark"></i>Saved Services</a>
+            <a href="#" data-page="saved-services"><i class="fas fa-bookmark"></i>Saved Services</a>
 
             <div class="section-label">🛍 Orders</div>
             <a href="../customer/orders.php?lang=<?php echo $lang; ?>"><i class="fas fa-list-alt"></i>My Orders</a>

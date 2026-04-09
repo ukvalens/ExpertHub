@@ -49,11 +49,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <title>Sign Up - ExpertHub</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="assets/css/style.css?v=14" rel="stylesheet">
 </head>
 <body class="auth-body">
     <div class="container">
-        <div class="row align-items-center min-vh-100">
+        <div class="row align-items-center py-4">
             <div class="col-lg-6 d-none d-lg-block">
                 <div class="pe-5">
                     <h2 class="fw-bold mb-4 text-primary">Join ExpertHub Today</h2>

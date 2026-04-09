@@ -86,6 +86,7 @@ $page_map = [
     'order-board'      => '../provider/order-board.php',
     'requests'         => '../provider/requests.php',
     'quotes'           => '../provider/quotes.php',
+    'negotiations'     => '../provider/negotiations.php',
     'earnings'         => '../provider/earnings.php',
     'provider-messages'=> '../provider/messages.php',
     'provider-support' => '../provider/support.php',
@@ -212,7 +213,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <div class="section-label">📥 Requests</div>
             <a href="#" data-page="requests"><i class="fas fa-inbox"></i>New Requests</a>
             <a href="#" data-page="quotes" data-status="pending"><i class="fas fa-file-signature"></i>Pending Quotes</a>
-            <a href="../provider/negotiations.php?lang=<?php echo $lang; ?>"><i class="fas fa-handshake"></i>Negotiations</a>
+            <a href="#" data-page="negotiations"><i class="fas fa-handshake"></i>Negotiations</a>
 
             <div class="section-label">🛠 Services</div>
             <a href="../provider/my-services.php?lang=<?php echo $lang; ?>"><i class="fas fa-briefcase"></i>My Services</a>

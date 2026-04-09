@@ -76,255 +76,9 @@ if ($user_type === 'customer') {
     <title><?php echo ucfirst($user_type); ?> Dashboard - ExpertHub</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #0077B6;
-            --secondary: #023E8A;
-            --accent: #00BFA6;
-            --bg: #F8F9FA;
-            --sidebar-w: 240px;
-            --primary-color: #0077B6;
-            --secondary-color: #023E8A;
-            --accent-color: #00BFA6;
-            --background-color: #F8F9FA;
-            --light-bg: #E6F2F1;
-            --text-color: #2D2D2D;
-            --text-muted: #6C757D;
-            --success-color: #2A9D8F;
-            --error-color: #E63946;
-            --white: #FFFFFF;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: var(--bg);
-            min-height: 100vh;
-            display: grid;
-            grid-template-rows: 60px 1fr auto;
-            grid-template-columns: var(--sidebar-w) 1fr;
-            grid-template-areas:
-                "topbar topbar"
-                "sidebar main"
-                "footer footer";
-        }
-
-        /* TOPBAR */
-        .topbar {
-            grid-area: topbar;
-            height: 60px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-            position: sticky;
-            top: 0;
-        }
-
-        .topbar .brand {
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 700;
-            text-decoration: none;
-        }
-
-        .topbar .description {
-            color: rgba(255,255,255,0.85);
-            font-size: 0.85rem;
-        }
-
-        .topbar .profile-area {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .topbar .profile-area img,
-        .topbar .profile-area .avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid rgba(255,255,255,0.5);
-        }
-
-        .topbar .profile-area .avatar {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .topbar .profile-area .name {
-            color: white;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        /* SIDEBAR */
-        .sidebar {
-            grid-area: sidebar;
-            background: linear-gradient(180deg, var(--secondary), var(--primary));
-            overflow-y: auto;
-            padding: 15px 0;
-            position: sticky;
-            top: 60px;
-            height: calc(100vh - 60px);
-            align-self: start;
-        }
-
-        .sidebar a {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            padding: 8px 18px;
-            color: rgba(255,255,255,0.8);
-            text-decoration: none;
-            font-size: 0.82rem;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .sidebar a:hover,
-        .sidebar a.active {
-            background: rgba(255,255,255,0.15);
-            color: white;
-            border-left: 3px solid var(--accent);
-            padding-left: 15px;
-        }
-
-        .sidebar a i {
-            width: 16px;
-            text-align: center;
-            font-size: 0.8rem;
-            flex-shrink: 0;
-        }
-
-        .sidebar .section-label {
-            color: rgba(255,255,255,0.45);
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            padding: 12px 18px 3px;
-            letter-spacing: 1px;
-            font-weight: 600;
-        }
-
-        /* MAIN CONTENT */
-        .main-wrapper {
-            grid-area: main;
-        }
-
-        .main-content {
-            padding: 20px;
-        }
-
-        /* STAT CARDS */
-        .stat-card {
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 4px 15px rgba(0,119,182,0.08);
-            text-align: center;
-            transition: transform 0.2s;
-        }
-
-        .stat-card:hover { transform: translateY(-4px); }
-
-        .stat-icon {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #E6F2F1, #F0F4F8);
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            margin: 0 auto 8px;
-        }
-
-        .stat-card h5 {
-            color: var(--primary);
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 2px;
-        }
-
-        .stat-card p {
-            color: #6C757D;
-            font-size: 0.78rem;
-            margin: 0;
-        }
-
-        /* CONTENT CARDS */
-        .content-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,119,182,0.08);
-            overflow: hidden;
-        }
-
-        .content-card .card-header {
-            background: white;
-            border-bottom: 1px solid #f0f0f0;
-            padding: 12px 15px;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        .content-card .card-body { padding: 15px; }
-
-        /* FOOTER */
-        footer {
-            grid-area: footer;
-            padding-left: var(--sidebar-w);
-        }
-
-        @media (max-width: 768px) {
-            footer { padding-left: 0; }
-        }
-
-        /* HAMBURGER */
-        .hamburger { display: none; background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; padding: 5px; }
-
-        /* SIDEBAR OVERLAY */
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.4);
-            z-index: 998;
-        }
-
-        /* RESPONSIVE */
-        @media (max-width: 768px) {
-            body {
-                grid-template-columns: 0 1fr;
-            }
-            .hamburger { display: block; }
-            .topbar .description { display: none; }
-            .sidebar {
-                position: fixed;
-                top: 60px;
-                left: -220px;
-                width: 220px;
-                height: calc(100vh - 60px);
-                z-index: 999;
-                transition: left 0.3s ease;
-            }
-            .sidebar.open { left: 0; }
-            .sidebar-overlay.open { display: block; }
-        }
-    </style>
+    <link href="/ExpertHUB/assets/css/style.css" rel="stylesheet">
 </head>
-<body>
+<body class="dashboard-body">
 
     <!-- TOPBAR -->
     <div class="topbar">
@@ -360,7 +114,7 @@ if ($user_type === 'customer') {
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- SIDEBAR -->
-    <div class="sidebar" id="sidebar">
+    <div class="dashboard-sidebar" id="sidebar">
 
         <?php if ($user_type === 'customer'): ?>
 
@@ -398,9 +152,6 @@ if ($user_type === 'customer') {
             <a href="../customer/invoices.php?lang=<?php echo $lang; ?>"><i class="fas fa-file-invoice"></i>Invoices</a>
             <a href="../customer/refunds.php?lang=<?php echo $lang; ?>"><i class="fas fa-undo"></i>Refunds</a>
 
-        
-
-           
             <div class="section-label">🆘 Support</div>
             <a href="../customer/help.php?lang=<?php echo $lang; ?>"><i class="fas fa-question-circle"></i>Help Center</a>
             <a href="../customer/tickets.php?lang=<?php echo $lang; ?>"><i class="fas fa-ticket-alt"></i>Support Tickets</a>
@@ -410,7 +161,6 @@ if ($user_type === 'customer') {
 
             <div class="section-label">🏠 Dashboard</div>
             <a href="index.php?lang=<?php echo $lang; ?>" class="active"><i class="fas fa-home"></i>Dashboard</a>
-            <a href="../provider/performance.php?lang=<?php echo $lang; ?>"><i class="fas fa-chart-line"></i>Performance Overview</a>
 
             <div class="section-label">📦 Orders</div>
             <a href="../provider/orders.php?lang=<?php echo $lang; ?>"><i class="fas fa-shopping-bag"></i>All Orders</a>
@@ -454,22 +204,14 @@ if ($user_type === 'customer') {
             <a href="../provider/clients.php?lang=<?php echo $lang; ?>"><i class="fas fa-users"></i>My Clients</a>
             <a href="../provider/client-management.php?lang=<?php echo $lang; ?>"><i class="fas fa-user-cog"></i>Client Management</a>
 
-            <div class="section-label">⭐ Reviews</div>
-            <a href="../provider/reviews.php?lang=<?php echo $lang; ?>"><i class="fas fa-star"></i>Reviews</a>
-            <a href="../provider/ratings.php?lang=<?php echo $lang; ?>"><i class="fas fa-chart-bar"></i>Ratings</a>
-            <a href="../provider/performance-metrics.php?lang=<?php echo $lang; ?>"><i class="fas fa-tachometer-alt"></i>Performance Metrics</a>
 
             <div class="section-label">📢 Growth</div>
             <a href="../provider/promotions.php?lang=<?php echo $lang; ?>"><i class="fas fa-bullhorn"></i>Promotions</a>
             <a href="../provider/offers.php?lang=<?php echo $lang; ?>"><i class="fas fa-tags"></i>Offers</a>
             <a href="../provider/profile-optimization.php?lang=<?php echo $lang; ?>"><i class="fas fa-rocket"></i>Profile Optimization</a>
 
-            <div class="section-label">⚖️ Disputes</div>
-            <a href="../provider/disputes.php?lang=<?php echo $lang; ?>"><i class="fas fa-gavel"></i>Dispute Center</a>
-            <a href="../provider/compliance.php?lang=<?php echo $lang; ?>"><i class="fas fa-clipboard-check"></i>Compliance</a>
 
             <div class="section-label">⚙️ Settings</div>
-            <a href="../provider/profile.php?lang=<?php echo $lang; ?>"><i class="fas fa-user-tie"></i>Profile Settings</a>
             <a href="../provider/account-settings.php?lang=<?php echo $lang; ?>"><i class="fas fa-cog"></i>Account Settings</a>
             <a href="../provider/team.php?lang=<?php echo $lang; ?>"><i class="fas fa-users-cog"></i>Team Management</a>
 
@@ -505,14 +247,6 @@ if ($user_type === 'customer') {
             <a href="../admin/commissions.php"><i class="fas fa-percentage"></i>Commissions</a>
             <a href="../admin/payouts.php"><i class="fas fa-money-bill-wave"></i>Payouts</a>
             <a href="../admin/revenue.php"><i class="fas fa-chart-line"></i>Revenue Reports</a>
-
-            <div class="section-label">⭐ Reviews</div>
-            <a href="../admin/reviews.php"><i class="fas fa-star"></i>Reviews Monitoring</a>
-            <a href="../admin/ratings.php"><i class="fas fa-chart-bar"></i>Ratings Analysis</a>
-
-            <div class="section-label">⚖️ Disputes</div>
-            <a href="../admin/dispute-cases.php"><i class="fas fa-balance-scale"></i>Dispute Cases</a>
-            <a href="../admin/resolution.php"><i class="fas fa-handshake"></i>Resolution Center</a>
 
             <div class="section-label">📊 Analytics</div>
             <a href="../admin/user-analytics.php"><i class="fas fa-users"></i>User Analytics</a>

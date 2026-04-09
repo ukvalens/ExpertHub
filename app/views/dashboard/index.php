@@ -138,6 +138,7 @@ $page_map = [
     'provider-support' => '../provider/support.php',
     // admin
     'customers'        => '../admin/customers.php',
+    'admin-tickets'    => '../admin/tickets.php',
     'manage-photos'    => '../admin/manage_about.php',
 ];
 
@@ -420,7 +421,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <a href="../admin/system-monitoring.php"><i class="fas fa-desktop"></i>System Monitoring</a>
 
             <div class="section-label">🆘 Support</div>
-            <a href="../admin/tickets.php"><i class="fas fa-ticket-alt"></i>Support Tickets</a>
+            <a href="#" data-page="admin-tickets"><i class="fas fa-ticket-alt"></i>Support Tickets</a>
             <a href="../admin/bug-reports.php"><i class="fas fa-bug"></i>Bug Reports</a>
 
         <?php endif; ?>

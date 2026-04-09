@@ -116,6 +116,7 @@ $page_map = [
     'order'            => '../customer/order.php',
     'wallet'           => '../customer/wallet.php',
     'support'          => '../customer/support.php',
+    'tickets'          => '../customer/tickets.php',
     'profile'          => '../' . $user_type . '/profile.php',
     // provider
     'my-services'      => '../provider/my-services.php',
@@ -293,7 +294,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
 
             <div class="section-label">🆘 Support</div>
             <a href="../customer/help.php?lang=<?php echo $lang; ?>"><i class="fas fa-question-circle"></i>Help Center</a>
-            <a href="../customer/tickets.php?lang=<?php echo $lang; ?>"><i class="fas fa-ticket-alt"></i>Support Tickets</a>
+            <a href="#" data-page="tickets"><i class="fas fa-ticket-alt"></i>Support Tickets</a>
             <a href="../customer/contact.php?lang=<?php echo $lang; ?>"><i class="fas fa-headset"></i>Contact Support</a>
 
         <?php elseif ($user_type === 'provider'): ?>

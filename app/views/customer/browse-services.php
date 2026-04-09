@@ -2,6 +2,13 @@
 session_start();
 require_once '../../../config/database.php';
 
+// Serve portfolio for a provider (AJAX)
+if (isset($_GET['portfolio_provider_id'])) {
+    $view_provider_id = (int)$_GET['portfolio_provider_id'];
+    include '../shared/portfolio-viewer.php';
+    exit;
+}
+
 $search = $_GET['search'] ?? '';
 $category = $_GET['category'] ?? '';
 $page = max(1, $_GET['page'] ?? 1);
@@ -146,7 +153,13 @@ $services = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                                                         <span class="h5 text-success mb-0">$<?php echo number_format($service['base_price'], 2); ?></span>
                                                         <small class="text-muted d-block">starting at</small>
                                                     </div>
-                                                    <div>
+                                                    <div class="d-flex gap-1">
+                                                        <button class="btn btn-outline-secondary btn-sm view-portfolio-btn"
+                                                            data-provider-id="<?php echo $service['provider_id']; ?>"
+                                                            data-provider-name="<?php echo htmlspecialchars($service['first_name'] . ' ' . $service['last_name']); ?>"
+                                                            data-bs-toggle="modal" data-bs-target="#portfolioModal">
+                                                            <i class="fas fa-images"></i>
+                                                        </button>
                                                         <a href="order.php?service_id=<?php echo $service['id']; ?>&lang=<?php echo $_GET['lang'] ?? 'en'; ?>" class="btn btn-primary btn-sm">
                                                             <i class="fas fa-shopping-cart me-1"></i>Order
                                                         </a>
@@ -196,5 +209,32 @@ $services = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     <?php include '../../../includes/footer.php'; ?>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- Portfolio Modal -->
+    <div class="modal fade" id="portfolioModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-images me-2"></i><span id="portfolioModalName"></span>'s Portfolio</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="portfolioModalBody">
+                    <div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.querySelectorAll('.view-portfolio-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.getElementById('portfolioModalName').textContent = btn.dataset.providerName;
+            document.getElementById('portfolioModalBody').innerHTML = '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></div>';
+            fetch('browse-services.php?portfolio_provider_id=' + btn.dataset.providerId + '&lang=<?php echo $_GET["lang"] ?? "en"; ?>')
+                .then(r => r.text()).then(html => {
+                    document.getElementById('portfolioModalBody').innerHTML = html;
+                });
+        });
+    });
+    </script>
 </body>
 </html>

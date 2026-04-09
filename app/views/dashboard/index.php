@@ -83,6 +83,7 @@ $page_map = [
     'my-services'      => '../provider/my-services.php',
     'create-service'   => '../provider/create-service.php',
     'templates'        => '../provider/templates.php',
+    'portfolio'        => '../provider/portfolio.php',
     'provider-orders'  => '../provider/orders.php',
     'order-board'      => '../provider/order-board.php',
     'requests'         => '../provider/requests.php',
@@ -220,7 +221,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <a href="#" data-page="my-services"><i class="fas fa-briefcase"></i>My Services</a>
             <a href="#" data-page="create-service"><i class="fas fa-plus"></i>Create Service</a>
             <a href="#" data-page="templates"><i class="fas fa-copy"></i>Service Templates</a>
-            <a href="../provider/portfolio.php?lang=<?php echo $lang; ?>"><i class="fas fa-images"></i>Portfolio</a>
+            <a href="#" data-page="portfolio"><i class="fas fa-images"></i>Portfolio</a>
 
             <div class="section-label">📅 Schedule</div>
             <a href="../provider/calendar.php?lang=<?php echo $lang; ?>"><i class="fas fa-calendar-alt"></i>Calendar</a>

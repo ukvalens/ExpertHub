@@ -180,11 +180,11 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <a href="#" data-page="saved-services"><i class="fas fa-bookmark"></i>Saved Services</a>
 
             <div class="section-label">🛍 Orders</div>
-            <a href="../customer/orders.php?lang=<?php echo $lang; ?>"><i class="fas fa-list-alt"></i>My Orders</a>
-            <a href="../customer/orders.php?status=active&lang=<?php echo $lang; ?>"><i class="fas fa-spinner"></i>Active Orders</a>
-            <a href="../customer/orders.php?status=review&lang=<?php echo $lang; ?>"><i class="fas fa-star-half-alt"></i>Pending Review</a>
-            <a href="../customer/orders.php?status=completed&lang=<?php echo $lang; ?>"><i class="fas fa-check-circle"></i>Completed Orders</a>
-            <a href="../customer/orders.php?status=cancelled&lang=<?php echo $lang; ?>"><i class="fas fa-times-circle"></i>Cancelled Orders</a>
+            <a href="#" data-page="orders"><i class="fas fa-list-alt"></i>My Orders</a>
+            <a href="#" data-page="orders" data-status="active"><i class="fas fa-spinner"></i>Active Orders</a>
+            <a href="#" data-page="orders" data-status="review"><i class="fas fa-star-half-alt"></i>Pending Review</a>
+            <a href="#" data-page="orders" data-status="completed"><i class="fas fa-check-circle"></i>Completed Orders</a>
+            <a href="#" data-page="orders" data-status="cancelled"><i class="fas fa-times-circle"></i>Cancelled Orders</a>
 
             <div class="section-label">💬 Communication</div>
             <a href="#" data-page="messages"><i class="fas fa-comments"></i>Messages</a>

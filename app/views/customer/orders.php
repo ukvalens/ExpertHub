@@ -1,350 +1,357 @@
 <?php
-session_start();
-require_once '../../../config/database.php';
+if (!isset($conn)) {
+    session_start();
+    require_once '../../../config/database.php';
+    $lang = $_GET['lang'] ?? 'en';
+    $s    = isset($_GET['status']) ? '&status='.$_GET['status'] : '';
+    header("Location: ../dashboard/index.php?page=orders&lang=$lang$s"); exit;
+}
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'customer') {
-    header("Location: ../../../login.php");
-    exit();
+    echo '<div class="alert alert-danger">Access denied.</div>'; return;
 }
 
 $user_id = $_SESSION['user_id'];
+$lang    = $_GET['lang'] ?? 'en';
+
+// AJAX: submit review
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'submit_review') {
+    $order_id   = (int)$_POST['order_id'];
+    $rating     = max(1, min(5, (int)$_POST['rating']));
+    $review_text= trim($_POST['review_text'] ?? '');
+
+    // Get provider_id for this order
+    $stmt = $conn->prepare("SELECT provider_id FROM orders WHERE id = ? AND customer_id = ? AND status = 'completed'");
+    $stmt->bind_param("ii", $order_id, $user_id);
+    $stmt->execute();
+    $ord = $stmt->get_result()->fetch_assoc();
+
+    if ($ord) {
+        // Check not already reviewed
+        $chk = $conn->prepare("SELECT id FROM reviews WHERE order_id = ?");
+        $chk->bind_param("i", $order_id);
+        $chk->execute();
+        if (!$chk->get_result()->fetch_assoc()) {
+            $stmt = $conn->prepare("INSERT INTO reviews (order_id, reviewer_id, provider_id, overall_rating, review_text) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param("iiiis", $order_id, $user_id, $ord['provider_id'], $rating, $review_text);
+            $stmt->execute();
+            // Update provider avg rating
+            $conn->query("UPDATE service_providers SET rating = (SELECT AVG(overall_rating) FROM reviews WHERE provider_id = {$ord['provider_id']} AND status = 'active'), total_reviews = (SELECT COUNT(*) FROM reviews WHERE provider_id = {$ord['provider_id']}) WHERE id = {$ord['provider_id']}");
+        }
+    }
+    echo json_encode(['ok' => true]); exit;
+}
+
 $status_filter = $_GET['status'] ?? 'all';
-$page = max(1, $_GET['page'] ?? 1);
-$per_page = 3;
-$offset = ($page - 1) * $per_page;
+$ord_page      = max(1, (int)($_GET['opage'] ?? 1));
+$per_page      = 10;
+$offset        = ($ord_page - 1) * $per_page;
 
-// Handle review submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
-    $order_id = $_POST['order_id'];
-    $rating = $_POST['rating'];
-    $review_text = $_POST['review_text'];
-    
-    // For now, just show success message (database table needs to be created)
-    $review_success = true;
-    
-    // TODO: Create reviews table with columns: id, order_id, rating, review_text, created_at
-    // $stmt = $conn->prepare("INSERT INTO reviews (order_id, rating, review_text, created_at) VALUES (?, ?, ?, NOW())");
-    // $stmt->bind_param("iis", $order_id, $rating, $review_text);
-    // $stmt->execute();
-}
-
-// Build query conditions
-$where_clause = "WHERE o.customer_id = ?";
-$params = [$user_id];
-$param_types = "i";
-
-if ($status_filter !== 'all') {
-    $where_clause .= " AND o.status = ?";
-    $params[] = $status_filter;
-    $param_types .= "s";
-}
-
-// Get counts for each status
-$count_stmt = $conn->prepare("SELECT 
+// Counts
+$stmt = $conn->prepare("SELECT
     COUNT(*) as total,
-    COUNT(CASE WHEN o.status IN ('requested', 'accepted', 'in_progress') THEN 1 END) as active_count,
-    COUNT(CASE WHEN o.status = 'completed' THEN 1 END) as completed_count
-    FROM orders o WHERE o.customer_id = ?");
-$count_stmt->bind_param("i", $user_id);
-$count_stmt->execute();
-$counts = $count_stmt->get_result()->fetch_assoc();
+    COUNT(CASE WHEN status IN ('requested','quoted','accepted','in_progress') THEN 1 END) as active_count,
+    COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_count,
+    COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled_count
+    FROM orders WHERE customer_id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$counts = $stmt->get_result()->fetch_assoc();
 
-// Get total count for current filter
-$filter_count_stmt = $conn->prepare("SELECT COUNT(*) as total FROM orders o 
-                                   JOIN provider_services ps ON o.service_id = ps.id 
-                                   JOIN service_providers sp ON o.provider_id = sp.id 
-                                   JOIN users u ON sp.user_id = u.id 
-                                   $where_clause");
-$filter_count_stmt->bind_param($param_types, ...$params);
-$filter_count_stmt->execute();
-$total_orders = $filter_count_stmt->get_result()->fetch_assoc()['total'];
-$total_pages = ceil($total_orders / $per_page);
+// Filter map
+$status_map = [
+    'all'       => null,
+    'active'    => ['requested','quoted','accepted','in_progress'],
+    'completed' => ['completed'],
+    'review'    => ['awaiting_review'],
+    'cancelled' => ['cancelled'],
+];
 
-// Get customer orders with pagination and message counts
-$stmt = $conn->prepare("SELECT o.*, ps.title as service_title, u.first_name, u.last_name,
-                       (SELECT COUNT(*) FROM messages WHERE order_id = o.id AND receiver_id = ? AND is_read = 0) as unread_messages
-                       FROM orders o 
-                       JOIN provider_services ps ON o.service_id = ps.id 
-                       JOIN service_providers sp ON o.provider_id = sp.id 
-                       JOIN users u ON sp.user_id = u.id 
-                       $where_clause 
-                       ORDER BY o.created_at DESC 
-                       LIMIT ? OFFSET ?");
-$params_with_user = array_merge([$user_id], $params, [$per_page, $offset]);
-$param_types_with_user = "i" . $param_types . "ii";
-$stmt->bind_param($param_types_with_user, ...$params_with_user);
+$where  = "WHERE o.customer_id = ?";
+$params = [$user_id];
+$types  = 'i';
+
+if ($status_filter !== 'all' && isset($status_map[$status_filter])) {
+    $statuses = $status_map[$status_filter];
+    $ph = implode(',', array_fill(0, count($statuses), '?'));
+    $where  .= " AND o.status IN ($ph)";
+    $params  = array_merge($params, $statuses);
+    $types  .= str_repeat('s', count($statuses));
+}
+
+// Count filtered
+$cnt = $conn->prepare("SELECT COUNT(*) as total FROM orders o $where");
+$cnt->bind_param($types, ...$params);
+$cnt->execute();
+$total_orders = $cnt->get_result()->fetch_assoc()['total'];
+$total_pages  = ceil($total_orders / $per_page);
+
+// Orders
+$p2 = array_merge([$user_id], $params, [$per_page, $offset]);
+$t2 = 'i' . $types . 'ii';
+$stmt = $conn->prepare("SELECT o.id, o.order_number, o.status, o.created_at, o.quoted_price, o.final_price,
+    o.service_title, o.started_at, o.completed_at,
+    u.first_name, u.last_name, u.profile_image,
+    (SELECT COUNT(*) FROM messages WHERE order_id=o.id AND receiver_id=? AND is_read=0) as unread,
+    (SELECT id FROM reviews WHERE order_id=o.id LIMIT 1) as review_id
+    FROM orders o
+    JOIN service_providers sp ON o.provider_id=sp.id
+    JOIN users u ON sp.user_id=u.id
+    $where ORDER BY o.created_at DESC LIMIT ? OFFSET ?");
+$stmt->bind_param($t2, ...$p2);
 $stmt->execute();
 $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+$status_colors = [
+    'requested'      => 'primary',
+    'quoted'         => 'info',
+    'accepted'       => 'info',
+    'in_progress'    => 'warning',
+    'awaiting_review'=> 'secondary',
+    'completed'      => 'success',
+    'cancelled'      => 'danger',
+    'disputed'       => 'danger',
+];
+
+$tabs = [
+    'all'       => ['label' => 'All',       'count' => $counts['total'],          'color' => 'secondary'],
+    'active'    => ['label' => 'Active',    'count' => $counts['active_count'],   'color' => 'primary'],
+    'completed' => ['label' => 'Completed', 'count' => $counts['completed_count'],'color' => 'success'],
+    'cancelled' => ['label' => 'Cancelled', 'count' => $counts['cancelled_count'],'color' => 'danger'],
+];
 ?>
-<!DOCTYPE html>
-<html lang="<?php echo $_GET['lang'] ?? 'en'; ?>">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Orders - ExpertHub</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="../../../assets/css/style.css" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="../dashboard/index.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">
-                <i class="fas fa-users-cog me-2"></i>ExpertHub
-            </a>
-            <div class="navbar-nav mx-auto">
-                <a class="nav-link" href="../dashboard/index.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">Home</a>
-                <a class="nav-link" href="browse-services.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">Browse Services</a>
-                <a class="nav-link active" href="orders.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>">My Orders</a>
-            </div>
-            <div class="dropdown">
-                <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    <i class="fas fa-user me-1"></i>Customer
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item text-danger" href="../../../logout.php">
-                        <i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                </ul>
-            </div>
+
+<div class="content-card">
+    <div class="card-header"><i class="fas fa-list-alt me-2" style="color:var(--accent-color)"></i>My Orders</div>
+    <div class="card-body">
+
+        <!-- Tabs -->
+        <div class="btn-group mb-3 flex-wrap" role="group">
+            <?php foreach ($tabs as $key => $tab): ?>
+                <a href="?page=orders&status=<?php echo $key; ?>&lang=<?php echo $lang; ?>"
+                   class="btn btn-sm <?php echo $status_filter === $key ? 'btn-'.$tab['color'] : 'btn-outline-'.$tab['color']; ?> nav-link-ajax"
+                   data-page="orders" data-status="<?php echo $key; ?>">
+                    <?php echo $tab['label']; ?>
+                    <span class="badge bg-white text-dark ms-1"><?php echo $tab['count']; ?></span>
+                </a>
+            <?php endforeach; ?>
         </div>
-    </nav>
 
-    <div class="container py-4">
-        <div class="row">
-            <div class="col-12">
-                <div class="auth-card">
-                    <div class="auth-header">
-                        <h3><i class="fas fa-list-alt me-2"></i>My Orders</h3>
-                        <p class="mb-0">Track and manage your service orders</p>
-                    </div>
-                    <div class="p-4">
-                        <!-- Review Success Alert -->
-                        <?php if (isset($review_success)): ?>
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                <i class="fas fa-check-circle me-2"></i>
-                                <strong>Thank you!</strong> Your review has been submitted successfully.
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <?php if (empty($orders)): ?>
+            <div class="text-center py-5">
+                <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                <h6 class="text-muted">No orders found</h6>
+                <p class="text-muted small">
+                    <?php echo $status_filter === 'all' ? "You haven't placed any orders yet." : "No $status_filter orders."; ?>
+                </p>
+                <a href="#" class="btn btn-primary btn-sm nav-link-ajax" data-page="browse-services">
+                    <i class="fas fa-search me-1"></i>Browse Services
+                </a>
+            </div>
+        <?php else: ?>
+            <?php foreach ($orders as $order):
+                $color = $status_colors[$order['status']] ?? 'secondary';
+            ?>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row align-items-start">
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                <strong class="text-muted small">#<?php echo htmlspecialchars($order['order_number']); ?></strong>
+                                <span class="badge bg-<?php echo $color; ?>">
+                                    <?php echo ucfirst(str_replace('_', ' ', $order['status'])); ?>
+                                </span>
+                                <?php if ($order['unread'] > 0): ?>
+                                    <span class="badge bg-danger"><i class="fas fa-envelope me-1"></i><?php echo $order['unread']; ?> new</span>
+                                <?php endif; ?>
+                                <small class="text-muted ms-auto"><?php echo date('M j, Y', strtotime($order['created_at'])); ?></small>
                             </div>
-                        <?php endif; ?>
-                        
-                        <!-- Filter Buttons -->
-                        <div class="btn-group mb-4" role="group">
-                            <a href="orders.php?status=all&lang=<?php echo $_GET['lang'] ?? 'en'; ?>" 
-                               class="btn <?php echo $status_filter === 'all' ? 'btn-primary' : 'btn-outline-primary'; ?>">All (<?php echo $counts['total']; ?>)</a>
-                            <a href="orders.php?status=requested&lang=<?php echo $_GET['lang'] ?? 'en'; ?>" 
-                               class="btn <?php echo $status_filter === 'requested' ? 'btn-primary' : 'btn-outline-primary'; ?>">Active (<?php echo $counts['active_count']; ?>)</a>
-                            <a href="orders.php?status=completed&lang=<?php echo $_GET['lang'] ?? 'en'; ?>" 
-                               class="btn <?php echo $status_filter === 'completed' ? 'btn-primary' : 'btn-outline-primary'; ?>">Completed (<?php echo $counts['completed_count']; ?>)</a>
-                        </div>
 
-                        <!-- Orders List -->
-                        <?php if (empty($orders)): ?>
-                            <div class="text-center py-5">
-                                <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
-                                <h5>No Orders Found</h5>
-                                <p class="text-muted">You haven't placed any orders yet.</p>
-                                <a href="browse-services.php?lang=<?php echo $_GET['lang'] ?? 'en'; ?>" class="btn btn-primary">
-                                    <i class="fas fa-search me-2"></i>Browse Services
-                                </a>
+                            <h6 class="text-primary mb-1"><?php echo htmlspecialchars($order['service_title']); ?></h6>
+
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <?php if ($order['profile_image']): ?>
+                                    <img src="../../../<?php echo htmlspecialchars($order['profile_image']); ?>"
+                                         class="rounded-circle" style="width:20px;height:20px;object-fit:cover;">
+                                <?php endif; ?>
+                                <small class="text-muted">
+                                    <i class="fas fa-user-tie me-1"></i>
+                                    <?php echo htmlspecialchars($order['first_name'].' '.$order['last_name']); ?>
+                                </small>
                             </div>
-                        <?php else: ?>
-                            <div class="row">
-                                <?php foreach ($orders as $order): ?>
-                                    <div class="col-md-6 col-lg-4 mb-4">
-                                        <div class="card h-100">
-                                            <div class="card-header d-flex justify-content-between">
-                                                <small class="text-muted">#<?php echo $order['order_number']; ?></small>
-                                                <span class="badge bg-<?php 
-                                                    echo $order['status'] === 'completed' ? 'success' : 
-                                                        ($order['status'] === 'in_progress' ? 'warning' : 'primary'); 
-                                                ?>">
-                                                    <?php echo ucfirst($order['status']); ?>
-                                                </span>
-                                            </div>
-                                            <div class="card-body">
-                                                <h6 class="card-title"><?php echo htmlspecialchars($order['service_title']); ?></h6>
-                                                <p class="card-text">
-                                                    <small class="text-muted">
-                                                        <i class="fas fa-user-tie me-1"></i>
-                                                        Provider: <?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?>
-                                                    </small>
-                                                </p>
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="text-success fw-bold">
-                                                        $<?php echo number_format($order['final_price'] ?? $order['quoted_price'] ?? 0, 2); ?>
-                                                    </span>
-                                                    <small class="text-muted">
-                                                        <?php echo date('M j, Y', strtotime($order['created_at'])); ?>
-                                                    </small>
-                                                </div>
-                                            </div>
-                                            <div class="card-footer bg-transparent">
-                                                <div class="btn-group w-100" role="group">
-                                                    <a href="order-details.php?order_id=<?php echo $order['id']; ?>&lang=<?php echo $_GET['lang'] ?? 'en'; ?>" class="btn btn-sm btn-outline-primary">
-                                                        <i class="fas fa-eye me-1"></i>Details
-                                                    </a>
-                                                    
-                                                    <?php if (in_array($order['status'], ['accepted', 'in_progress', 'completed'])): ?>
-                                                        <a href="messages.php?order_id=<?php echo $order['id']; ?>&lang=<?php echo $_GET['lang'] ?? 'en'; ?>" class="btn btn-sm btn-outline-info position-relative">
-                                                            <i class="fas fa-comments me-1"></i>Chat
-                                                            <?php if ($order['unread_messages'] > 0): ?>
-                                                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                                                    <?php echo $order['unread_messages']; ?>
-                                                                </span>
-                                                            <?php endif; ?>
-                                                        </a>
-                                                    <?php endif; ?>
-                                                    
-                                                    <?php if (in_array($order['status'], ['accepted', 'in_progress'])): ?>
-                                                        <a href="../shared/video-call.php?order_id=<?php echo $order['id']; ?>&lang=<?php echo $_GET['lang'] ?? 'en'; ?>" class="btn btn-sm btn-outline-success">
-                                                            <i class="fas fa-video me-1"></i>Call
-                                                        </a>
-                                                    <?php endif; ?>
-                                                    
-                                                    <?php if ($order['status'] === 'completed'): ?>
-                                                        <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#reviewModal" data-order-id="<?php echo $order['id']; ?>" data-provider="<?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?>" data-service="<?php echo htmlspecialchars($order['service_title']); ?>">
-                                                            <i class="fas fa-star me-1"></i>Review
-                                                        </button>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                            
-                            <!-- Pagination -->
-                            <?php if ($total_pages > 1): ?>
-                                <nav aria-label="Orders pagination">
-                                    <ul class="pagination justify-content-center">
-                                        <?php if ($page > 1): ?>
-                                            <li class="page-item">
-                                                <a class="page-link" href="orders.php?status=<?php echo $status_filter; ?>&page=<?php echo $page-1; ?>&lang=<?php echo $_GET['lang'] ?? 'en'; ?>">Previous</a>
-                                            </li>
-                                        <?php endif; ?>
-                                        
-                                        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                                            <li class="page-item <?php echo $i === $page ? 'active' : ''; ?>">
-                                                <a class="page-link" href="orders.php?status=<?php echo $status_filter; ?>&page=<?php echo $i; ?>&lang=<?php echo $_GET['lang'] ?? 'en'; ?>"><?php echo $i; ?></a>
-                                            </li>
-                                        <?php endfor; ?>
-                                        
-                                        <?php if ($page < $total_pages): ?>
-                                            <li class="page-item">
-                                                <a class="page-link" href="orders.php?status=<?php echo $status_filter; ?>&page=<?php echo $page+1; ?>&lang=<?php echo $_GET['lang'] ?? 'en'; ?>">Next</a>
-                                            </li>
-                                        <?php endif; ?>
-                                    </ul>
-                                </nav>
-                                
-                                <div class="text-center text-muted">
-                                    Showing <?php echo min($offset + 1, $total_orders); ?>-<?php echo min($offset + $per_page, $total_orders); ?> of <?php echo $total_orders; ?> orders
-                                </div>
+
+                            <?php if ($order['started_at']): ?>
+                                <small class="text-muted d-block">
+                                    <i class="fas fa-play me-1 text-warning"></i>Started <?php echo date('M j, g:i A', strtotime($order['started_at'])); ?>
+                                </small>
                             <?php endif; ?>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Review Modal -->
-    <div class="modal fade" id="reviewModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-star me-2"></i>Leave a Review</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="POST">
-                    <div class="modal-body">
-                        <input type="hidden" name="order_id" id="reviewOrderId">
-                        <div class="mb-3">
-                            <label class="form-label">Service:</label>
-                            <p class="fw-bold" id="reviewService"></p>
+                            <?php if ($order['completed_at']): ?>
+                                <small class="text-muted d-block">
+                                    <i class="fas fa-check me-1 text-success"></i>Completed <?php echo date('M j, g:i A', strtotime($order['completed_at'])); ?>
+                                </small>
+                            <?php endif; ?>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Provider:</label>
-                            <p class="fw-bold" id="reviewProvider"></p>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Rating *</label>
-                            <div class="rating-stars">
-                                <input type="radio" name="rating" value="5" id="star5" required>
-                                <label for="star5"><i class="fas fa-star"></i></label>
-                                <input type="radio" name="rating" value="4" id="star4">
-                                <label for="star4"><i class="fas fa-star"></i></label>
-                                <input type="radio" name="rating" value="3" id="star3">
-                                <label for="star3"><i class="fas fa-star"></i></label>
-                                <input type="radio" name="rating" value="2" id="star2">
-                                <label for="star2"><i class="fas fa-star"></i></label>
-                                <input type="radio" name="rating" value="1" id="star1">
-                                <label for="star1"><i class="fas fa-star"></i></label>
+
+                        <div class="col-md-4 text-end mt-2 mt-md-0">
+                            <div class="h5 text-success mb-2">
+                                $<?php echo number_format($order['final_price'] ?? $order['quoted_price'] ?? 0, 2); ?>
+                            </div>
+                            <div class="d-flex flex-column gap-1">
+                                <?php if (in_array($order['status'], ['accepted','in_progress','completed'])): ?>
+                                    <a href="#" class="btn btn-outline-info btn-sm nav-link-ajax position-relative"
+                                       data-page="messages" onclick="event.preventDefault(); selectConvCustomer(<?php echo $order['id']; ?>)">
+                                        <i class="fas fa-comments me-1"></i>Chat
+                                        <?php if ($order['unread'] > 0): ?>
+                                            <span class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle" style="font-size:.6rem;"><?php echo $order['unread']; ?></span>
+                                        <?php endif; ?>
+                                    </a>
+                                <?php endif; ?>
+                                <?php if (in_array($order['status'], ['accepted','in_progress'])): ?>
+                                    <a href="../shared/video-call.php?order_id=<?php echo $order['id']; ?>&lang=<?php echo $lang; ?>"
+                                       class="btn btn-outline-success btn-sm">
+                                        <i class="fas fa-video me-1"></i>Video Call
+                                    </a>
+                                <?php endif; ?>
+                                <?php if ($order['status'] === 'completed' && !$order['review_id']): ?>
+                                    <button class="btn btn-outline-warning btn-sm review-btn"
+                                            data-id="<?php echo $order['id']; ?>"
+                                            data-service="<?php echo htmlspecialchars($order['service_title'], ENT_QUOTES); ?>"
+                                            data-provider="<?php echo htmlspecialchars($order['first_name'].' '.$order['last_name'], ENT_QUOTES); ?>">
+                                        <i class="fas fa-star me-1"></i>Review
+                                    </button>
+                                <?php elseif ($order['review_id']): ?>
+                                    <span class="badge bg-success"><i class="fas fa-check me-1"></i>Reviewed</span>
+                                <?php endif; ?>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="review_text" class="form-label">Your Review</label>
-                            <textarea class="form-control" name="review_text" rows="4" placeholder="Share your experience..."></textarea>
-                        </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" name="submit_review" class="btn btn-warning">
-                            <i class="fas fa-star me-1"></i>Submit Review
-                        </button>
+                </div>
+            </div>
+            <?php endforeach; ?>
+
+            <?php if ($total_pages > 1): ?>
+            <nav><ul class="pagination justify-content-center mt-2">
+                <?php if ($ord_page > 1): ?>
+                    <li class="page-item"><a class="page-link nav-link-ajax" data-page="orders" data-status="<?php echo $status_filter; ?>"
+                        href="?page=orders&status=<?php echo $status_filter; ?>&opage=<?php echo $ord_page-1; ?>">Prev</a></li>
+                <?php endif; ?>
+                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                    <li class="page-item <?php echo $i === $ord_page ? 'active' : ''; ?>">
+                        <a class="page-link nav-link-ajax" data-page="orders" data-status="<?php echo $status_filter; ?>"
+                           href="?page=orders&status=<?php echo $status_filter; ?>&opage=<?php echo $i; ?>"><?php echo $i; ?></a>
+                    </li>
+                <?php endfor; ?>
+                <?php if ($ord_page < $total_pages): ?>
+                    <li class="page-item"><a class="page-link nav-link-ajax" data-page="orders" data-status="<?php echo $status_filter; ?>"
+                        href="?page=orders&status=<?php echo $status_filter; ?>&opage=<?php echo $ord_page+1; ?>">Next</a></li>
+                <?php endif; ?>
+            </ul></nav>
+            <?php endif; ?>
+        <?php endif; ?>
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div class="modal fade" id="reviewModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-star me-2 text-warning"></i>Leave a Review</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="reviewAlert"></div>
+                <p class="mb-1 small text-muted">Service: <strong id="rService"></strong></p>
+                <p class="mb-3 small text-muted">Provider: <strong id="rProvider"></strong></p>
+                <div class="mb-3 text-center">
+                    <div class="d-flex justify-content-center gap-2" id="starRow">
+                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                            <i class="fas fa-star fa-2x text-muted star-pick" data-val="<?php echo $i; ?>"
+                               style="cursor:pointer;transition:color .1s;"></i>
+                        <?php endfor; ?>
                     </div>
-                </form>
+                    <input type="hidden" id="rRating" value="0">
+                </div>
+                <textarea class="form-control" id="rText" rows="4" placeholder="Share your experience..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-warning" id="submitReviewBtn"><i class="fas fa-star me-1"></i>Submit</button>
             </div>
         </div>
     </div>
-    
-    <?php include '../../../includes/footer.php'; ?>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Handle review modal
-        document.getElementById('reviewModal').addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            document.getElementById('reviewOrderId').value = button.getAttribute('data-order-id');
-            document.getElementById('reviewService').textContent = button.getAttribute('data-service');
-            document.getElementById('reviewProvider').textContent = button.getAttribute('data-provider');
+</div>
+
+<script>
+(function(){
+    const lang = '<?php echo $lang; ?>';
+    const url  = 'index.php?page=orders&lang=' + lang;
+
+    // Chat shortcut
+    window.selectConvCustomer = function(orderId) {
+        history.pushState({page:'messages',extra:{}}, '', 'index.php?page=messages&lang='+lang+'&order_id='+orderId);
+        const mc = document.getElementById('mainContent');
+        mc.innerHTML = '<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i></div>';
+        fetch('index.php?page=messages&lang='+lang+'&order_id='+orderId, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+            .then(r=>r.text()).then(html=>{
+                mc.innerHTML = html;
+                mc.querySelectorAll('script').forEach(s=>{const ns=document.createElement('script');ns.textContent=s.textContent;document.body.appendChild(ns);});
+                if(typeof bindAjaxLinks==='function') bindAjaxLinks();
+            });
+    };
+
+    // Star rating
+    let selectedRating = 0;
+    document.querySelectorAll('.star-pick').forEach(star => {
+        star.addEventListener('mouseenter', () => {
+            document.querySelectorAll('.star-pick').forEach((s,i) => s.classList.toggle('text-warning', i < star.dataset.val));
         });
-        
-        // Star rating functionality
-        document.querySelectorAll('.rating-stars input').forEach(input => {
-            input.addEventListener('change', function() {
-                const rating = this.value;
-                document.querySelectorAll('.rating-stars label').forEach((label, index) => {
-                    if (index >= 5 - rating) {
-                        label.style.color = '#ffc107';
-                    } else {
-                        label.style.color = '#dee2e6';
-                    }
-                });
+        star.addEventListener('mouseleave', () => {
+            document.querySelectorAll('.star-pick').forEach((s,i) => s.classList.toggle('text-warning', i < selectedRating));
+        });
+        star.addEventListener('click', () => {
+            selectedRating = parseInt(star.dataset.val);
+            document.getElementById('rRating').value = selectedRating;
+            document.querySelectorAll('.star-pick').forEach((s,i) => {
+                s.classList.toggle('text-warning', i < selectedRating);
+                s.classList.toggle('text-muted', i >= selectedRating);
             });
         });
-    </script>
-    <style>
-        .rating-stars {
-            display: flex;
-            flex-direction: row-reverse;
-            justify-content: flex-end;
+    });
+
+    // Open review modal
+    let currentOrderId = null;
+    document.querySelectorAll('.review-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentOrderId = btn.dataset.id;
+            document.getElementById('rService').textContent  = btn.dataset.service;
+            document.getElementById('rProvider').textContent = btn.dataset.provider;
+            document.getElementById('rRating').value = 0;
+            selectedRating = 0;
+            document.querySelectorAll('.star-pick').forEach(s => { s.classList.remove('text-warning'); s.classList.add('text-muted'); });
+            document.getElementById('rText').value = '';
+            document.getElementById('reviewAlert').innerHTML = '';
+            new bootstrap.Modal(document.getElementById('reviewModal')).show();
+        });
+    });
+
+    // Submit review
+    document.getElementById('submitReviewBtn')?.addEventListener('click', () => {
+        if (!selectedRating) {
+            document.getElementById('reviewAlert').innerHTML = '<div class="alert alert-danger py-1">Please select a rating.</div>';
+            return;
         }
-        .rating-stars input {
-            display: none;
-        }
-        .rating-stars label {
-            cursor: pointer;
-            font-size: 1.5rem;
-            color: #dee2e6;
-            margin-right: 5px;
-        }
-        .rating-stars label:hover,
-        .rating-stars label:hover ~ label {
-            color: #ffc107;
-        }
-        .rating-stars input:checked ~ label {
-            color: #ffc107;
-        }
-    </style>
-</body>
-</html>
+        const data = new FormData();
+        data.append('action', 'submit_review');
+        data.append('order_id', currentOrderId);
+        data.append('rating', selectedRating);
+        data.append('review_text', document.getElementById('rText').value);
+        fetch(url + '&status=<?php echo $status_filter; ?>', {method:'POST', body:data, headers:{'X-Requested-With':'XMLHttpRequest'}})
+            .then(() => {
+                bootstrap.Modal.getInstance(document.getElementById('reviewModal'))?.hide();
+                if (typeof loadPage === 'function') loadPage('orders', false, {status:'<?php echo $status_filter; ?>'});
+            });
+    });
+})();
+</script>

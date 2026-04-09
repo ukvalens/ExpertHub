@@ -100,6 +100,9 @@ $page_map = [
 if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
     if ($page === 'dashboard') {
         include 'partials/dashboard-home.php';
+    } elseif ($page === 'browse-services' && isset($_GET['portfolio_provider_id'])) {
+        $view_provider_id = (int)$_GET['portfolio_provider_id'];
+        include '../shared/portfolio-viewer.php';
     } elseif (isset($page_map[$page]) && file_exists(__DIR__ . '/' . $page_map[$page])) {
         include $page_map[$page];
     } else {

@@ -204,7 +204,7 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
             <button class="hamburger" id="sidebarToggle"><i class="fas fa-bars"></i></button>
             <a href="../../../index.php" class="brand"><i class="fas fa-users-cog me-2"></i>ExpertHub</a>
         </div>
-        <span class="description d-none d-md-inline">
+        <span class="description d-none d-lg-inline">
             Welcome back, <?php echo htmlspecialchars($user['first_name']); ?>! 👋
         </span>
 

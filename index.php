@@ -6,7 +6,7 @@
     <title>ExpertHub - Online Service Marketplace</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css?v=16" rel="stylesheet">
+    <link href="assets/css/style.css?v=17" rel="stylesheet">
 
 </head>
 <body>
@@ -44,27 +44,27 @@
         <?php require_once 'config/database.php'; ?>
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-lg-6">
-                    <h1 class="fw-bold mb-2" style="font-size:2rem;">Find Expert Services for Any Task</h1>
+                <div class="col-lg-6 text-center text-lg-start">
+                    <h1 class="fw-bold mb-2" style="font-size:clamp(1.4rem,4vw,2rem);">Find Expert Services for Any Task</h1>
                     <p class="mb-3">Connect with verified professionals for web development, design, writing, consulting, and more.</p>
                     <div class="row g-2 mb-3">
-                        <div class="col-md-8">
+                        <div class="col-8 col-md-8">
                             <input type="text" class="form-control search-box" placeholder="What service do you need?">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-4 col-md-4">
                             <a href="browse-services.php" class="btn btn-accent w-100 search-btn">
-                                <i class="fas fa-search me-1"></i>Get Service Now
+                                <i class="fas fa-search me-1 d-none d-sm-inline"></i><span class="d-none d-sm-inline">Get Service Now</span><span class="d-sm-none">Search</span>
                             </a>
                         </div>
                     </div>
-                    <div class="d-flex flex-wrap gap-2">
+                    <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-lg-start">
                         <span class="badge bg-light text-dark">Web Development</span>
                         <span class="badge bg-light text-dark">Graphic Design</span>
                         <span class="badge bg-light text-dark">Digital Marketing</span>
                         <span class="badge bg-light text-dark">Content Writing</span>
                     </div>
                 </div>
-                <div class="col-lg-6">
+                <div class="col-lg-6 mt-3 mt-lg-0">
                     <?php
                     $service_photos = $conn->query("SELECT * FROM about_photos WHERE type = 'service' ORDER BY created_at DESC")->fetch_all(MYSQLI_ASSOC);
                     if (!empty($service_photos)): ?>

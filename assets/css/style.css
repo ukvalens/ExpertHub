@@ -395,27 +395,6 @@ body.dashboard-body footer {
     z-index: 998;
 }
 
-/* DASHBOARD RESPONSIVE */
-@media (max-width: 768px) {
-    body.dashboard-body {
-        grid-template-columns: 0 1fr;
-    }
-    body.dashboard-body footer { padding-left: 0; }
-    .hamburger { display: block; }
-    .topbar .description { display: none; }
-    .dashboard-sidebar {
-        position: fixed;
-        top: 60px;
-        left: -240px;
-        width: 240px;
-        height: calc(100vh - 60px);
-        z-index: 999;
-        transition: left 0.3s ease;
-    }
-    .dashboard-sidebar.open { left: 0; }
-    .sidebar-overlay.open { display: block; }
-}
-
 /* ABOUT SECTION */
 #about h4 { color: var(--primary-color); font-weight: 700; }
 #about h4 i { color: var(--accent-color); }
@@ -481,29 +460,214 @@ body.dashboard-body footer {
     color: var(--primary-color);
 }
 
-/* RESPONSIVE */
-@media (max-width: 768px) {
-    body { padding-top: 60px; }
-    .auth-card { margin: 10px; border-radius: 15px; }
-    .hero-section { padding: 40px 0; text-align: center; }
-    .sidebar { min-height: auto; }
-    .navbar-brand { font-size: 1.1rem; }
-    .service-card { margin-bottom: 1rem; }
-    #ownerCarousel img, #serviceCarousel img { height: 280px; }
-    footer { text-align: center; }
-    footer .col-md-6 { text-align: center !important; }
+/* =============================================
+   RESPONSIVE — Mobile-first, tablet, desktop
+   ============================================= */
+
+/* --- Tablet (≤ 992px) --- */
+@media (max-width: 992px) {
+    body { padding-top: 66px; }
+
+    /* Hero */
+    .hero-section { padding: 30px 0; }
+    .hero-section .col-lg-6:last-child { margin-top: 1.5rem; }
+    #homeServiceCarousel { max-height: 280px; }
+    .home-service-img { height: 280px; }
+
+    /* Auth pages */
+    .auth-body > .container { padding-top: 10px; padding-bottom: 10px; }
+
+    /* Dashboard sidebar width */
+    body.dashboard-body { grid-template-columns: 200px 1fr; }
+    body.dashboard-body footer { padding-left: 200px; }
+    .dashboard-sidebar a { font-size: 0.78rem; padding: 7px 14px; }
+
+    /* Stat cards */
+    .stat-card { padding: 12px 10px; }
+    .stat-card h5 { font-size: 1.1rem; }
+
+    /* Content cards table overflow */
+    .content-card .card-body { overflow-x: auto; }
+    table { min-width: 500px; }
 }
 
+/* --- Mobile (≤ 768px) --- */
+@media (max-width: 768px) {
+    body { padding-top: 60px; }
+
+    /* Navbar */
+    .navbar-brand { font-size: 1rem; }
+    .navbar-collapse { background: var(--secondary-color); padding: 10px 15px; border-radius: 0 0 10px 10px; }
+    .navbar-collapse .d-flex { flex-direction: column; gap: 8px; width: 100%; }
+    .navbar-collapse .btn { width: 100%; text-align: center; }
+
+    /* Hero */
+    .hero-section { padding: 25px 0; text-align: center; }
+    .hero-section h1 { font-size: 1.6rem; }
+    .hero-section p { font-size: 0.9rem; }
+    .hero-section .row.g-2 { flex-direction: column; }
+    .hero-section .col-md-8,
+    .hero-section .col-md-4 { width: 100%; }
+    .hero-section .d-flex.flex-wrap { justify-content: center; }
+    .hero-section .col-lg-6:last-child { margin-top: 1.2rem; }
+    #homeServiceCarousel { max-height: 220px; }
+    .home-service-img { height: 220px; }
+
+    /* Auth card */
+    .auth-card { margin: 8px; border-radius: 15px; }
+    .auth-body > .container { padding-top: 8px; padding-bottom: 8px; }
+    .auth-card .p-4 { padding: 0.6rem !important; }
+
+    /* Service cards */
+    .service-card { margin-bottom: 0.75rem; }
+
+    /* Carousels */
+    #ownerCarousel img, #serviceCarousel img { height: 240px; }
+
+    /* Dashboard */
+    body.dashboard-body { grid-template-columns: 0 1fr; }
+    body.dashboard-body footer { padding-left: 0; }
+    .hamburger { display: block; }
+    .topbar .description { display: none; }
+    .dashboard-sidebar {
+        position: fixed;
+        top: 60px;
+        left: -240px;
+        width: 240px;
+        height: calc(100vh - 60px);
+        z-index: 999;
+        transition: left 0.3s ease;
+    }
+    .dashboard-sidebar.open { left: 0; }
+    .sidebar-overlay.open { display: block; }
+
+    /* Topbar profile area */
+    .topbar .profile-area .name { display: none; }
+    .topbar { padding: 0 12px; }
+    .topbar .brand { font-size: 1rem; }
+
+    /* Stat cards — 2 per row */
+    .stat-card { padding: 10px 8px; }
+    .stat-card h5 { font-size: 1rem; }
+    .stat-card p { font-size: 0.72rem; }
+    .stat-icon { width: 38px; height: 38px; font-size: 0.95rem; }
+
+    /* Main content padding */
+    .main-content { padding: 12px; }
+
+    /* Content card header */
+    .content-card .card-header { font-size: 0.82rem; padding: 10px 12px; }
+    .content-card .card-body { padding: 10px; }
+
+    /* Tables */
+    .content-card .card-body { overflow-x: auto; }
+    table { min-width: 480px; font-size: 0.8rem; }
+
+    /* Modals */
+    .modal-dialog { margin: 8px; }
+    .modal-dialog.modal-lg { max-width: calc(100vw - 16px); }
+
+    /* Footer */
+    footer { text-align: center; }
+    footer .col-md-6 { text-align: center !important; }
+    footer .col-lg-2, footer .col-lg-4 { margin-bottom: 0.5rem; }
+    footer .d-flex { justify-content: center; }
+
+    /* Browse services search form */
+    .content-card .row.g-2 .col-md-6,
+    .content-card .row.g-2 .col-md-4,
+    .content-card .row.g-2 .col-md-2 { width: 100%; }
+
+    /* Pagination */
+    .pagination { flex-wrap: wrap; gap: 2px; }
+    .page-link { padding: 4px 8px; font-size: 0.8rem; }
+
+    /* Buttons in card footers */
+    .card-footer .d-flex { flex-wrap: wrap; gap: 4px; }
+    .card-footer .btn { font-size: 0.75rem; padding: 4px 8px; }
+
+    /* Dashboard quick actions */
+    .content-card .d-grid .btn { font-size: 0.82rem; }
+
+    /* Order board / kanban */
+    .row.g-3 > [class*="col-md"] { width: 100%; }
+}
+
+/* --- Small mobile (≤ 576px) --- */
 @media (max-width: 576px) {
-    .auth-card { margin: 5px; }
-    .hero-section h1 { font-size: 1.8rem; }
-    .service-icon { width: 45px; height: 45px; font-size: 1.1rem; }
-    .stat-number { font-size: 2rem; }
-    #ownerCarousel img, #serviceCarousel img { height: 220px; }
+    body { padding-top: 56px; }
+
+    /* Auth */
+    .auth-card { margin: 4px; border-radius: 12px; }
+    .auth-header { padding: 0.6rem 1rem; }
+    .auth-header h3, .auth-header h5 { font-size: 1rem; }
+
+    /* Hero */
+    .hero-section h1 { font-size: 1.4rem; }
+    .hero-section p { font-size: 0.82rem; }
+    .hero-section .badge { font-size: 0.7rem; }
+    #homeServiceCarousel { max-height: 180px; }
+    .home-service-img { height: 180px; }
+
+    /* Service icon */
+    .service-icon { width: 40px; height: 40px; font-size: 1rem; }
+
+    /* Stat number */
+    .stat-number { font-size: 1.8rem; }
+
+    /* Carousels */
+    #ownerCarousel img, #serviceCarousel img { height: 200px; }
     #ownerCarousel .carousel-control-prev,
     #ownerCarousel .carousel-control-next,
     #serviceCarousel .carousel-control-prev,
-    #serviceCarousel .carousel-control-next { width: 38px; height: 38px; }
-    footer h5, footer h6 { font-size: 0.95rem; margin-top: 1rem; }
+    #serviceCarousel .carousel-control-next { width: 34px; height: 34px; }
+
+    /* Footer */
+    footer h5, footer h6 { font-size: 0.88rem; margin-top: 0.75rem; }
     footer .d-flex { justify-content: center; }
+    footer p.small { font-size: 0.75rem; }
+
+    /* Topbar */
+    .topbar { padding: 0 8px; }
+    .topbar .brand { font-size: 0.9rem; }
+    .topbar .profile-area { gap: 6px; }
+    .topbar .profile-area img,
+    .topbar .profile-area .avatar { width: 30px; height: 30px; }
+
+    /* Signup role cards */
+    .role-card { padding: 12px 6px; }
+    .role-card .role-icon { width: 40px; height: 40px; font-size: 1rem; }
+    .role-card .role-title { font-size: 0.8rem; }
+    .role-card .role-desc { font-size: 0.68rem; }
+
+    /* Step indicator */
+    .step-dot { width: 24px; height: 24px; font-size: 0.7rem; }
+    .step-line { max-width: 35px; }
+
+    /* Stat cards — 2 per row stays, smaller */
+    .stat-card h5 { font-size: 0.95rem; }
+    .stat-card p { font-size: 0.68rem; }
+    .stat-icon { width: 34px; height: 34px; font-size: 0.85rem; margin-bottom: 5px; }
+
+    /* Browse services cards — 1 per row */
+    .content-card .row.g-3 > .col-md-6,
+    .content-card .row.g-3 > .col-lg-4 { width: 100%; }
+
+    /* Tables */
+    table { font-size: 0.75rem; }
+    th, td { padding: 6px 8px !important; }
+
+    /* Modals */
+    .modal-dialog { margin: 4px; }
+    .modal-header { padding: 10px 12px; }
+    .modal-body { padding: 10px 12px; }
+    .modal-footer { padding: 8px 12px; }
+
+    /* Forms */
+    .form-control, .form-select { font-size: 0.85rem; padding: 8px 10px; }
+    .btn { font-size: 0.85rem; }
+
+    /* Content card */
+    .content-card .card-header { font-size: 0.78rem; }
+    .main-content { padding: 8px; }
 }
